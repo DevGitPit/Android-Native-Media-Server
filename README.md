@@ -107,6 +107,22 @@ export DOTNET_ROOT=$PREFIX/lib/dotnet
 
 ---
 
-## 📝 Maintenance
-* **Stopping:** Use `pkill dotnet` or `pkill jellyfin`.
-* **Restarting:** You will need to start these commands again after a phone reboot or Termux restart.
+## 🗑️ Uninstallation
+
+If you wish to remove the media server and all its configurations:
+
+### Automated Uninstall
+```bash
+# 1. Download the script
+wget https://raw.githubusercontent.com/DevGitPit/Android-Native-Media-Server/main/uninstall_media_server.sh
+
+# 2. Run it
+chmod +x uninstall_media_server.sh && ./uninstall_media_server.sh
+```
+
+### Manual Cleanup
+1.  **Stop services:** `pkill dotnet` and `pkill jellyfin`.
+2.  **Remove folders:** `rm -rf $PREFIX/opt/{Radarr,Sonarr,Prowlarr}`.
+3.  **Delete configs:** `rm -rf ~/.config/{Radarr,Sonarr,Prowlarr,jellyfin}`.
+4.  **Uninstall packages:** `pkg uninstall dotnet-runtime-9.0 jellyfin-server mono libesqlite3 sqlite -y`.
+5.  **Remove DOTNET_ROOT** from your `~/.bashrc`.
