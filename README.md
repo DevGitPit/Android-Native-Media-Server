@@ -21,6 +21,21 @@ The standard Linux ARM64 binaries for the *Arr stack are compiled for **glibc**.
 
 ## 🚀 Installation Steps
 
+### Option 1: Automated Setup (Recommended)
+The easiest way to get started is to use the provided automation script. It handles all dependencies, library linking, and runtime configurations for you:
+
+```bash
+# 1. Download the script
+wget https://raw.githubusercontent.com/DevGitPit/Android-Native-Media-Server/main/setup_media_server.sh
+
+# 2. Make it executable and run it
+chmod +x setup_media_server.sh && ./setup_media_server.sh
+```
+
+---
+
+### Option 2: Manual Installation (Step-by-Step)
+
 ### 1. Update and Dependencies
 ```bash
 pkg update -y && pkg upgrade -y
