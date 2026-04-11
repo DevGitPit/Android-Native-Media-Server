@@ -115,7 +115,13 @@ Once installed, you can launch the entire stack (including Transmission and Jell
 ./start-server.sh
 ```
 
-This script handles:
+To stop all services and free up memory:
+
+```bash
+./stop-server.sh
+```
+
+These scripts handle:
 *   **Wake Lock:** Prevents Android from killing the processes.
 *   **Environment:** Sets the required `.NET` variables.
 *   **Services:** Starts all 5 core server processes in the background.
