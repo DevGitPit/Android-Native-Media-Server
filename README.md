@@ -107,6 +107,29 @@ export DOTNET_ROOT=$PREFIX/lib/dotnet
 
 ---
 
+## ▶️ Running the Server
+
+Once installed, you can launch the entire stack (including Transmission and Jellyfin) using the master start script:
+
+```bash
+./start-server.sh
+```
+
+This script handles:
+*   **Wake Lock:** Prevents Android from killing the processes.
+*   **Environment:** Sets the required `.NET` variables.
+*   **Services:** Starts all 5 core server processes in the background.
+
+| Service | Access URL |
+| :--- | :--- |
+| **Jellyfin** | `http://[YOUR_IP]:8096` |
+| **Radarr** | `http://[YOUR_IP]:7878` |
+| **Sonarr** | `http://[YOUR_IP]:8989` |
+| **Prowlarr** | `http://[YOUR_IP]:9696` |
+| **Transmission** | `http://[YOUR_IP]:9091` |
+
+---
+
 ## 🗑️ Uninstallation
 
 If you wish to remove the media server and all its configurations:
