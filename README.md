@@ -40,7 +40,7 @@ chmod +x setup_media_server.sh && ./setup_media_server.sh
 ```bash
 pkg update -y && pkg upgrade -y
 pkg install tur-repo -y
-pkg install wget curl sqlite libicu mono libesqlite3 dotnet-runtime-9.0 jellyfin-server -y
+pkg install wget curl sqlite libicu mono libesqlite3 mediainfo ffmpeg dotnet-runtime-9.0 jellyfin-server -y
 ```
 
 ### 2. Setup the *Arr Stack
@@ -59,14 +59,18 @@ tar -xvzf radarr.tar.gz -C $PREFIX/opt/
 ### 3. Native Optimization (CRITICAL)
 For **each** application (Radarr, Sonarr, Prowlarr), you **MUST** perform the following:
 
-1.  **Remove bundled glibc libraries:**
+1.  **Remove bundled glibc libraries & binaries:**
     ```bash
     rm $PREFIX/opt/[AppName]/*.so
+    rm -f $PREFIX/opt/[AppName]/ffprobe
+    rm -f $PREFIX/opt/[AppName]/ffmpeg
     ```
-2.  **Link native Android libraries:**
+2.  **Link native Android libraries & binaries:**
     ```bash
     ln -s $PREFIX/lib/libMonoPosixHelper.so $PREFIX/opt/[AppName]/
     ln -s $PREFIX/lib/libe_sqlite3.so $PREFIX/opt/[AppName]/
+    ln -s $PREFIX/bin/ffprobe $PREFIX/opt/[AppName]/
+    ln -s $PREFIX/bin/ffmpeg $PREFIX/opt/[AppName]/
     ```
 3.  **Disable the forced dependency check:**
     ```bash

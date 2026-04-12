@@ -16,7 +16,7 @@ echo "🚀 Starting Native Termux Media Server Setup..."
 echo "📦 Installing system dependencies..."
 pkg update -y
 pkg install tur-repo -y
-pkg install wget curl sqlite libicu mono libesqlite3 dotnet-runtime-9.0 jellyfin-server -y
+pkg install wget curl sqlite libicu mono libesqlite3 mediainfo ffmpeg dotnet-runtime-9.0 jellyfin-server -y
 
 # 2. Setup Directories
 mkdir -p "$INSTALL_DIR"
@@ -44,6 +44,16 @@ setup_app() {
     # Link native Android libraries
     ln -sf "$PREFIX/lib/libMonoPosixHelper.so" "$INSTALL_DIR/$name/"
     ln -sf "$PREFIX/lib/libe_sqlite3.so" "$INSTALL_DIR/$name/"
+    
+    # Replace bundled ffprobe/ffmpeg with system ones (Fixes SIGSYS/Exit 159 on Android)
+    if [ -f "$INSTALL_DIR/$name/ffprobe" ]; then
+        rm -f "$INSTALL_DIR/$name/ffprobe"
+        ln -sf "$PREFIX/bin/ffprobe" "$INSTALL_DIR/$name/ffprobe"
+    fi
+    if [ -f "$INSTALL_DIR/$name/ffmpeg" ]; then
+        rm -f "$INSTALL_DIR/$name/ffmpeg"
+        ln -sf "$PREFIX/bin/ffmpeg" "$INSTALL_DIR/$name/ffmpeg"
+    fi
     
     # Disable version-locked dependency check
     if [ -f "$INSTALL_DIR/$name/$name.deps.json" ]; then

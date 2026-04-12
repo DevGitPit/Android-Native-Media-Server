@@ -3,3 +3,4 @@
 backup_so/
 .gemini/
 check-memory.sh
+.dual-graph/
