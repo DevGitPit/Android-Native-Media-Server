@@ -2,22 +2,28 @@
 
 echo "🛑 Stopping Media Server Stack..."
 
-# 1. Stop the .NET Arr Stack
+# 1. Stop the start script / watchdog first
+echo "Stopping Watchdog..."
+pkill -f "start-server.sh"
+
+# 2. Stop Radarr, Sonarr, and Prowlarr (.NET Apps)
 echo "Stopping Radarr, Sonarr, and Prowlarr..."
 pkill -f "Radarr.dll"
 pkill -f "Sonarr.dll"
 pkill -f "Prowlarr.dll"
+pkill -f "dotnet"
 
-# 2. Stop Jellyfin
+# 3. Stop Jellyfin (Runit)
 echo "Stopping Jellyfin..."
+sv down jellyfin 2>/dev/null
 pkill -f "jellyfin"
 
-# 3. Stop Transmission
+# 4. Stop Transmission (Runit)
 echo "Stopping Transmission..."
-transmission-remote -n 'transmission:transmission' --exit > /dev/null 2>&1 || pkill -f "transmission-daemon"
+sv down transmission 2>/dev/null
+pkill -f "transmission-daemon"
 
-# 4. Release Wake Lock
-echo "Releasing Termux Wake Lock..."
+# 5. Release Wake Lock
 termux-wake-unlock
 
-echo "✅ All services stopped. Memory freed! 🚀"
+echo "All services STOPPED! 💤"

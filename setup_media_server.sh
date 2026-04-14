@@ -45,19 +45,21 @@ setup_app() {
     ln -sf "$PREFIX/lib/libMonoPosixHelper.so" "$INSTALL_DIR/$name/"
     ln -sf "$PREFIX/lib/libe_sqlite3.so" "$INSTALL_DIR/$name/"
     
-    # Replace bundled ffprobe/ffmpeg with system ones (Fixes SIGSYS/Exit 159 on Android)
-    if [ -f "$INSTALL_DIR/$name/ffprobe" ]; then
-        rm -f "$INSTALL_DIR/$name/ffprobe"
-        ln -sf "$PREFIX/bin/ffprobe" "$INSTALL_DIR/$name/ffprobe"
-    fi
-    if [ -f "$INSTALL_DIR/$name/ffmpeg" ]; then
-        rm -f "$INSTALL_DIR/$name/ffmpeg"
-        ln -sf "$PREFIX/bin/ffmpeg" "$INSTALL_DIR/$name/ffmpeg"
-    fi
+    # Replace/Link ffprobe/ffmpeg with system ones (Fixes SIGSYS/Exit 159 on Android)
+    rm -f "$INSTALL_DIR/$name/ffprobe" "$INSTALL_DIR/$name/ffmpeg"
+    ln -sf "$PREFIX/bin/ffprobe" "$INSTALL_DIR/$name/ffprobe"
+    ln -sf "$PREFIX/bin/ffmpeg" "$INSTALL_DIR/$name/ffmpeg"
     
-    # Disable version-locked dependency check
+    # Patch dependency manifest for .NET 9.0 compatibility (Fixes CoreCLR resolution)
     if [ -f "$INSTALL_DIR/$name/$name.deps.json" ]; then
-        mv "$INSTALL_DIR/$name/$name.deps.json" "$INSTALL_DIR/$name/$name.deps.json.bak"
+        # Replace framework version from 6.0 to 9.0
+        sed -i 's/"6\.0\.0"/"9.0.0"/g' "$INSTALL_DIR/$name/$name.deps.json"
+        
+        # Remove native runtime blocks that trick muxer into self-contained mode
+        sed -i '/"libcoreclr.so": {/,/}/d' "$INSTALL_DIR/$name/$name.deps.json"
+        sed -i '/"libclrjit.so": {/,/}/d' "$INSTALL_DIR/$name/$name.deps.json"
+        sed -i '/"libhostpolicy.so": {/,/}/d' "$INSTALL_DIR/$name/$name.deps.json"
+        sed -i '/"libhostfxr.so": {/,/}/d' "$INSTALL_DIR/$name/$name.deps.json"
     fi
     
     # Update Runtime Config to use System .NET 9.0
@@ -86,8 +88,10 @@ setup_app "Prowlarr" "$PROWLARR_URL"
 echo "📝 Configuring environment..."
 if ! grep -q "DOTNET_ROOT" ~/.bashrc; then
     echo "export DOTNET_ROOT=\$PREFIX/lib/dotnet" >> ~/.bashrc
+    echo "export LD_LIBRARY_PATH=\$PREFIX/lib" >> ~/.bashrc
 fi
 export DOTNET_ROOT=$PREFIX/lib/dotnet
+export LD_LIBRARY_PATH=$PREFIX/lib
 
 # --- Verification & Testing ---
 echo "🧪 Starting Verification Tests..."
@@ -98,6 +102,8 @@ test_service() {
     
     echo "Testing $name..."
     # Run in background, capture output
+    export DOTNET_ROOT=$PREFIX/lib/dotnet
+    export LD_LIBRARY_PATH=$PREFIX/lib
     timeout 15s dotnet "$dll" -nobrowser > "${name,,}_test.log" 2>&1 &
     local pid=$!
     

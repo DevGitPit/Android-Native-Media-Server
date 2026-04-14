@@ -72,9 +72,10 @@ For **each** application (Radarr, Sonarr, Prowlarr), you **MUST** perform the fo
     ln -s $PREFIX/bin/ffprobe $PREFIX/opt/[AppName]/
     ln -s $PREFIX/bin/ffmpeg $PREFIX/opt/[AppName]/
     ```
-3.  **Disable the forced dependency check:**
+3.  **Patch the dependency manifest for .NET 9.0:**
     ```bash
-    mv $PREFIX/opt/[AppName]/[AppName].deps.json $PREFIX/opt/[AppName]/[AppName].deps.json.bak
+    # This allows the app to find CoreCLR in the Termux environment
+    sed -i 's/"6\.0\.0"/"9.0.0"/g' $PREFIX/opt/[AppName]/[AppName].deps.json
     ```
 4.  **Update the Runtime Config:**
     Replace the contents of `$PREFIX/opt/[AppName]/[AppName].runtimeconfig.json` with:
@@ -94,10 +95,11 @@ For **each** application (Radarr, Sonarr, Prowlarr), you **MUST** perform the fo
 
 ## ▶️ Starting the Services
 
-Before starting, it is recommended to set the `.NET` root environment variable so the applications can find the native runtime:
+Before starting, it is recommended to set the `.NET` root and library path environment variables so the applications can find the native runtime and libraries:
 
 ```bash
 export DOTNET_ROOT=$PREFIX/lib/dotnet
+export LD_LIBRARY_PATH=$PREFIX/lib
 ```
 
 | Service | Command | Access URL |
@@ -107,7 +109,7 @@ export DOTNET_ROOT=$PREFIX/lib/dotnet
 | **Sonarr** | `dotnet $PREFIX/opt/Sonarr/Sonarr.dll -nobrowser &` | `http://[YOUR_IP]:8989` |
 | **Prowlarr** | `dotnet $PREFIX/opt/Prowlarr/Prowlarr.dll -nobrowser &` | `http://[YOUR_IP]:9696` |
 
-> **Pro-Tip:** Add `export DOTNET_ROOT=$PREFIX/lib/dotnet` to your `~/.bashrc` file so you don't have to type it every time.
+> **Pro-Tip:** Add `export DOTNET_ROOT=$PREFIX/lib/dotnet` and `export LD_LIBRARY_PATH=$PREFIX/lib` to your `~/.bashrc` file so you don't have to type them every time.
 
 ---
 
@@ -118,6 +120,8 @@ Once installed, you can launch the entire stack (including Transmission and Jell
 ```bash
 ./start-server.sh
 ```
+
+**Note on Stability:** The start script includes a **Watchdog for Sonarr**. If Sonarr exits or crashes (common due to Android's memory management or native library calls), the script will automatically restart it after a 10-second delay to ensure maximum uptime.
 
 To stop all services and free up memory:
 
