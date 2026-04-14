@@ -40,7 +40,7 @@ chmod +x setup_media_server.sh && ./setup_media_server.sh
 ```bash
 pkg update -y && pkg upgrade -y
 pkg install tur-repo -y
-pkg install wget curl sqlite libicu mono libesqlite3 mediainfo ffmpeg dotnet-runtime-9.0 jellyfin-server -y
+pkg install wget curl sqlite libicu mono libesqlite3 ffmpeg dotnet-runtime-9.0 jellyfin-server -y
 ```
 
 ### 2. Setup the *Arr Stack

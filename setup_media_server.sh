@@ -16,7 +16,7 @@ echo "🚀 Starting Native Termux Media Server Setup..."
 echo "📦 Installing system dependencies..."
 pkg update -y
 pkg install tur-repo -y
-pkg install wget curl sqlite libicu mono libesqlite3 mediainfo ffmpeg dotnet-runtime-9.0 jellyfin-server -y
+pkg install wget curl sqlite libicu mono libesqlite3 ffmpeg dotnet-runtime-9.0 jellyfin-server -y
 
 # 2. Setup Directories
 mkdir -p "$INSTALL_DIR"
