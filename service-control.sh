@@ -4,7 +4,8 @@
 WORKDIR="/data/data/com.termux/files/home/arrFin"
 BAZARR_PATH="/data/data/com.termux/files/usr/opt/bazarr/bazarr.py"
 LOG_DIR="$WORKDIR/logs"
-mkdir -p "$LOG_DIR"
+PID_DIR="$WORKDIR/pids"
+mkdir -p "$LOG_DIR" "$PID_DIR"
 
 # .NET Environment
 export DOTNET_ROOT=$PREFIX/lib/dotnet
@@ -30,6 +31,8 @@ start_arr_apps() {
             echo "$(date): Starting $app..." >> "$LOG_DIR/${app,,}.log"
             # Watchdog loop
             (
+                # Store the actual subshell PID
+                echo "$BASHPID" > "$PID_DIR/${app,,}_watchdog.pid"
                 while true; do
                     dotnet "$PREFIX/opt/$app/$app.dll" -nobrowser >> "$LOG_DIR/${app,,}.log" 2>&1
                     echo "$(date): $app exited, restarting in 10s..." >> "$LOG_DIR/${app,,}.log"
@@ -49,29 +52,38 @@ start_bazarr() {
 
 stop_arr_apps() {
     echo "Stopping Radarr, Sonarr, Prowlarr watchdogs and processes..."
-    pkill -f "dotnet.*/opt/(Radarr|Sonarr|Prowlarr)" 
-    pkill -f "Radarr.dll"
-    pkill -f "Sonarr.dll"
-    pkill -f "Prowlarr.dll"
-    pkill -f "dotnet"
+    for app in radarr sonarr prowlarr; do
+        if [ -f "$PID_DIR/${app}_watchdog.pid" ]; then
+            PID=$(cat "$PID_DIR/${app}_watchdog.pid")
+            echo "Killing watchdog PID $PID for $app"
+            kill -9 "$PID" 2>/dev/null
+            rm "$PID_DIR/${app}_watchdog.pid"
+        fi
+    done
+    
+    # Now kill the actual processes using specific paths
+    pkill -9 -f "dotnet.*/opt/Radarr"
+    pkill -9 -f "dotnet.*/opt/Sonarr"
+    pkill -9 -f "dotnet.*/opt/Prowlarr"
 }
 
 stop_bazarr() {
     echo "Stopping Bazarr..."
-    pkill -f "bazarr.py"
-    pkill -f "bazarr/main.py"
+    # Match the specific path to bazarr
+    pkill -9 -f "python.*bazarr/main.py"
+    pkill -9 -f "python.*bazarr.py"
 }
 
 stop_transmission() {
     echo "Stopping Transmission..."
     sv down transmission 2>/dev/null
-    pkill -x "transmission-daemon"
+    pkill -9 -x "transmission-daemon"
 }
 
 stop_jellyfin() {
     echo "Stopping Jellyfin..."
     sv down jellyfin 2>/dev/null
-    pkill -f "bin/jellyfin"
+    pkill -9 -f "bin/jellyfin"
 }
 
 check_status() {
@@ -110,7 +122,6 @@ case "$1" in
         ;;
     status)
         echo "--- Service Status ---"
-        # Be careful with patterns to avoid matching runsv or svlogd
         check_status "Jellyfin" "bin/jellyfin"
         check_status "Transmission" "transmission-daemon"
         check_status "Radarr" "Radarr.dll"
