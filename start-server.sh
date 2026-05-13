@@ -5,10 +5,8 @@ cd "$WORKDIR" || exit
 
 echo "🚀 Starting Media Server Stack with Battery Automation..."
 
-# 1. Start all services
-bash ./service-control.sh start-all
-
-# 2. Start the battery monitor
+# Start the battery monitor. 
+# It is now configured to enforce the correct mode (Full or Eco) on startup.
 bash ./battery-monitor.sh --start
 
-echo "Media Server is UP and monitoring battery! 🚀"
+echo "Battery monitor is active and managing services! 🚀"
