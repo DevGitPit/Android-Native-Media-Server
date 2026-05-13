@@ -84,7 +84,15 @@ setup_app "Radarr" "$RADARR_URL"
 setup_app "Sonarr" "$SONARR_URL"
 setup_app "Prowlarr" "$PROWLARR_URL"
 
-# 4. Final Environment Setup
+# 4. Apply Custom Tweaks (e.g., Bazarr)
+echo "🔧 Applying custom tweaks..."
+BAZARR_INSTALLED_DIR="/data/data/com.termux/files/usr/opt/bazarr"
+if [ -d "$WORKDIR/custom/bazarr" ] && [ -d "$BAZARR_INSTALLED_DIR" ]; then
+    echo "📦 Applying custom Bazarr tweaks..."
+    cp "$WORKDIR/custom/bazarr/"* "$BAZARR_INSTALLED_DIR/"
+fi
+
+# 5. Final Environment Setup
 echo "📝 Configuring environment..."
 if ! grep -q "DOTNET_ROOT" ~/.bashrc; then
     echo "export DOTNET_ROOT=\$PREFIX/lib/dotnet" >> ~/.bashrc
