@@ -1,6 +1,7 @@
 #!/data/data/com.termux/files/usr/bin/bash
 
 # --- Configuration ---
+WORKDIR=$(pwd)
 INSTALL_DIR="$PREFIX/opt"
 APPS=("Radarr" "Sonarr" "Prowlarr")
 DOTNET_VERSION="9.0"

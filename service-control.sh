@@ -69,7 +69,11 @@ stop_arr_apps() {
 
 stop_bazarr() {
     echo "Stopping Bazarr..."
-    # Bazarr often ignores SIGTERM, using SIGKILL (-9) for reliability
+    # Try graceful SIGTERM first
+    pkill -f "/python.*/opt/bazarr/bazarr/main.py"
+    pkill -f "/python.*/opt/bazarr/bazarr.py"
+    sleep 2
+    # Forceful SIGKILL if still alive
     pkill -9 -f "/python.*/opt/bazarr/bazarr/main.py"
     pkill -9 -f "/python.*/opt/bazarr/bazarr.py"
 }
@@ -77,7 +81,10 @@ stop_bazarr() {
 stop_transmission() {
     echo "Stopping Transmission..."
     sv down transmission 2>/dev/null
-    # Transmission can be stubborn, using SIGKILL (-9) for reliability
+    # Try graceful SIGTERM first
+    pkill -x "transmission-daemon"
+    sleep 2
+    # Forceful SIGKILL if still alive
     pkill -9 -x "transmission-daemon"
 }
 

@@ -10,7 +10,9 @@ CHECK_INTERVAL=120 # Seconds
 monitor_loop() {
     # Initial state: start as "none" to force a log/check on the first run
     CURRENT_MODE="none"
+    HEARTBEAT_COUNT=0
     
+    mkdir -p "$WORKDIR/logs"
     echo "$(date): Battery monitor started (PID: $$)" >> "$WORKDIR/logs/monitor.log"
     
     while true; do
@@ -49,10 +51,13 @@ monitor_loop() {
                 bash "$CONTROL_SCRIPT" stop-eco
             fi
             CURRENT_MODE="$TARGET_MODE"
+            HEARTBEAT_COUNT=0 # Reset on transition
         else
-            # Heartbeat log (every 10 minutes / 5 checks approx)
-            if (( $(date +%M) % 10 == 0 )); then
+            # Heartbeat log (every 5 checks approx 10 minutes)
+            ((HEARTBEAT_COUNT++))
+            if (( HEARTBEAT_COUNT >= 5 )); then
                  echo "$(date): Heartbeat - Level: $LEVEL%, Status: $STATUS, Mode: $CURRENT_MODE" >> "$WORKDIR/logs/monitor.log"
+                 HEARTBEAT_COUNT=0
             fi
         fi
         
