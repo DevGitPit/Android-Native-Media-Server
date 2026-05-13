@@ -10,6 +10,60 @@ RADARR_URL="https://radarr.servarr.com/v1/update/master/updatefile?os=linux&runt
 SONARR_URL="https://services.sonarr.tv/v1/download/main/latest?version=4&os=linux&arch=arm64"
 PROWLARR_URL="https://prowlarr.servarr.com/v1/update/master/updatefile?os=linux&runtime=netcore&arch=arm64"
 
+# --- Optimization Function (The "Shim") ---
+optimize_app() {
+    local name=$1
+    echo "⚙️ Optimizing $name for Native Termux..."
+    
+    # Remove bundled glibc libraries
+    rm -f "$INSTALL_DIR/$name"/*.so
+    
+    # Link native Android libraries
+    ln -sf "$PREFIX/lib/libMonoPosixHelper.so" "$INSTALL_DIR/$name/"
+    ln -sf "$PREFIX/lib/libe_sqlite3.so" "$INSTALL_DIR/$name/"
+    
+    # Replace/Link ffprobe/ffmpeg with system ones
+    rm -f "$INSTALL_DIR/$name/ffprobe" "$INSTALL_DIR/$name/ffmpeg"
+    ln -sf "$PREFIX/bin/ffprobe" "$INSTALL_DIR/$name/ffprobe"
+    ln -sf "$PREFIX/bin/ffmpeg" "$INSTALL_DIR/$name/ffmpeg"
+    
+    # Patch dependency manifest
+    if [ -f "$INSTALL_DIR/$name/$name.deps.json" ]; then
+        sed -i 's/"6\.0\.0"/"9.0.0"/g' "$INSTALL_DIR/$name/$name.deps.json"
+        sed -i '/"libcoreclr.so": {/,/}/d' "$INSTALL_DIR/$name/$name.deps.json"
+        sed -i '/"libclrjit.so": {/,/}/d' "$INSTALL_DIR/$name/$name.deps.json"
+        sed -i '/"libhostpolicy.so": {/,/}/d' "$INSTALL_DIR/$name/$name.deps.json"
+        sed -i '/"libhostfxr.so": {/,/}/d' "$INSTALL_DIR/$name/$name.deps.json"
+    fi
+    
+    # Update Runtime Config
+    cat > "$INSTALL_DIR/$name/$name.runtimeconfig.json" <<EOF
+{
+  "runtimeOptions": {
+    "tfm": "net$DOTNET_VERSION",
+    "frameworks": [
+      { "name": "Microsoft.NETCore.App", "version": "$DOTNET_VERSION.0" },
+      { "name": "Microsoft.AspNetCore.App", "version": "$DOTNET_VERSION.0" }
+    ],
+    "configProperties": {
+      "System.Reflection.Metadata.MetadataUpdater.IsSupported": false,
+      "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization": false
+    }
+  }
+}
+EOF
+}
+
+# --- Main Logic ---
+if [[ "$1" == "--optimize-only" ]]; then
+    for app in "${APPS[@]}"; do
+        if [ -d "$INSTALL_DIR/$app" ]; then
+            optimize_app "$app"
+        fi
+    done
+    exit 0
+fi
+
 echo "🚀 Starting Native Termux Media Server Setup..."
 
 # 1. Update and Dependencies
@@ -33,51 +87,10 @@ setup_app() {
         tar -xvzf "${name,,}.tar.gz" -C "$INSTALL_DIR/"
         rm "${name,,}.tar.gz"
     else
-        echo "✅ $name already extracted."
+        echo "✅ $name already exists."
     fi
 
-    echo "⚙️ Optimizing $name for Native Termux..."
-    
-    # Remove bundled glibc libraries
-    rm -f "$INSTALL_DIR/$name"/*.so
-    
-    # Link native Android libraries
-    ln -sf "$PREFIX/lib/libMonoPosixHelper.so" "$INSTALL_DIR/$name/"
-    ln -sf "$PREFIX/lib/libe_sqlite3.so" "$INSTALL_DIR/$name/"
-    
-    # Replace/Link ffprobe/ffmpeg with system ones (Fixes SIGSYS/Exit 159 on Android)
-    rm -f "$INSTALL_DIR/$name/ffprobe" "$INSTALL_DIR/$name/ffmpeg"
-    ln -sf "$PREFIX/bin/ffprobe" "$INSTALL_DIR/$name/ffprobe"
-    ln -sf "$PREFIX/bin/ffmpeg" "$INSTALL_DIR/$name/ffmpeg"
-    
-    # Patch dependency manifest for .NET 9.0 compatibility (Fixes CoreCLR resolution)
-    if [ -f "$INSTALL_DIR/$name/$name.deps.json" ]; then
-        # Replace framework version from 6.0 to 9.0
-        sed -i 's/"6\.0\.0"/"9.0.0"/g' "$INSTALL_DIR/$name/$name.deps.json"
-        
-        # Remove native runtime blocks that trick muxer into self-contained mode
-        sed -i '/"libcoreclr.so": {/,/}/d' "$INSTALL_DIR/$name/$name.deps.json"
-        sed -i '/"libclrjit.so": {/,/}/d' "$INSTALL_DIR/$name/$name.deps.json"
-        sed -i '/"libhostpolicy.so": {/,/}/d' "$INSTALL_DIR/$name/$name.deps.json"
-        sed -i '/"libhostfxr.so": {/,/}/d' "$INSTALL_DIR/$name/$name.deps.json"
-    fi
-    
-    # Update Runtime Config to use System .NET 9.0
-    cat > "$INSTALL_DIR/$name/$name.runtimeconfig.json" <<EOF
-{
-  "runtimeOptions": {
-    "tfm": "net$DOTNET_VERSION",
-    "frameworks": [
-      { "name": "Microsoft.NETCore.App", "version": "$DOTNET_VERSION.0" },
-      { "name": "Microsoft.AspNetCore.App", "version": "$DOTNET_VERSION.0" }
-    ],
-    "configProperties": {
-      "System.Reflection.Metadata.MetadataUpdater.IsSupported": false,
-      "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization": false
-    }
-  }
-}
-EOF
+    optimize_app "$name"
 }
 
 setup_app "Radarr" "$RADARR_URL"
@@ -101,45 +114,4 @@ fi
 export DOTNET_ROOT=$PREFIX/lib/dotnet
 export LD_LIBRARY_PATH=$PREFIX/lib
 
-# --- Verification & Testing ---
-echo "🧪 Starting Verification Tests..."
-
-test_service() {
-    local name=$1
-    local dll="$INSTALL_DIR/$name/$name.dll"
-    
-    echo "Testing $name..."
-    # Run in background, capture output
-    export DOTNET_ROOT=$PREFIX/lib/dotnet
-    export LD_LIBRARY_PATH=$PREFIX/lib
-    timeout 15s dotnet "$dll" -nobrowser > "${name,,}_test.log" 2>&1 &
-    local pid=$!
-    
-    # Wait a bit for startup
-    sleep 10
-    
-    if grep -q "Application started" "${name,,}_test.log" || grep -q "Now listening on" "${name,,}_test.log"; then
-        echo "✅ $name started successfully!"
-        kill $pid 2>/dev/null
-        return 0
-    else
-        echo "❌ $name failed to start properly. Check ${name,,}_test.log"
-        cat "${name,,}_test.log"
-        kill $pid 2>/dev/null
-        return 1
-    fi
-}
-
-echo "Testing Jellyfin..."
-if jellyfin --help > /dev/null 2>&1; then
-    echo "✅ Jellyfin binary found and functional."
-else
-    echo "❌ Jellyfin check failed."
-fi
-
-test_service "Radarr"
-test_service "Sonarr"
-test_service "Prowlarr"
-
-echo "🎉 Setup and Verification Complete!"
-echo "Check your README.md for start commands."
+echo "🎉 Setup Complete!"

@@ -111,8 +111,13 @@ case "$1" in
         pgrep -f "Prowlarr.dll" > /dev/null && echo "[ON] Prowlarr" || echo "[OFF] Prowlarr"
         pgrep -f "bazarr.py" > /dev/null && echo "[ON] Bazarr" || echo "[OFF] Bazarr"
         ;;
+    re-shim)
+        echo "🔧 Re-applying native library shims and patches..."
+        bash ./setup_media_server.sh --optimize-only
+        notify "Native shims re-applied! ✅"
+        ;;
     *)
-        echo "Usage: $0 {start-all|stop-all|stop-eco|status}"
+        echo "Usage: $0 {start-all|stop-all|stop-eco|status|re-shim}"
         exit 1
         ;;
 esac
