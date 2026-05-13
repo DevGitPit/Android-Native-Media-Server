@@ -15,9 +15,14 @@ monitor_loop() {
     
     while true; do
         # Get battery info
-        BATTERY_INFO=$(termux-battery-status)
-        LEVEL=$(echo "$BATTERY_INFO" | jq -r '.percentage')
-        STATUS=$(echo "$BATTERY_INFO" | jq -r '.status')
+        BATTERY_INFO=$(termux-battery-status 2>/dev/null)
+        
+        # Defensive parsing: default to 0 if API fails or percentage is missing
+        LEVEL=$(echo "$BATTERY_INFO" | jq -r '.percentage // 0')
+        STATUS=$(echo "$BATTERY_INFO" | jq -r '.status // "DISCHARGING"')
+        
+        # Ensure LEVEL is a valid integer
+        if [[ ! "$LEVEL" =~ ^[0-9]+$ ]]; then LEVEL=0; fi
         
         # Logic: 
         # Full Power if Level > THRESHOLD OR Status == "CHARGING" OR Status == "FULL"
@@ -38,15 +43,17 @@ monitor_loop() {
         if [[ "$TARGET_MODE" != "$CURRENT_MODE" ]]; then
             echo "$(date): Battery at $LEVEL%, Status: $STATUS. Mode: $TARGET_MODE" >> "$WORKDIR/logs/monitor.log"
             
-            # Only run commands if it's a real transition (not the first run "none" -> "full/eco")
-            if [[ "$CURRENT_MODE" != "none" ]]; then
-                if [[ "$TARGET_MODE" == "full" ]]; then
-                    bash "$CONTROL_SCRIPT" start-all
-                else
-                    bash "$CONTROL_SCRIPT" stop-eco
-                fi
+            if [[ "$TARGET_MODE" == "full" ]]; then
+                bash "$CONTROL_SCRIPT" start-all
+            else
+                bash "$CONTROL_SCRIPT" stop-eco
             fi
             CURRENT_MODE="$TARGET_MODE"
+        else
+            # Heartbeat log (every 10 minutes / 5 checks approx)
+            if (( $(date +%M) % 10 == 0 )); then
+                 echo "$(date): Heartbeat - Level: $LEVEL%, Status: $STATUS, Mode: $CURRENT_MODE" >> "$WORKDIR/logs/monitor.log"
+            fi
         fi
         
         sleep "$CHECK_INTERVAL"
