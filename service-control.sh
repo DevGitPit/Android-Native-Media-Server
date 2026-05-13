@@ -61,17 +61,17 @@ stop_arr_apps() {
         fi
     done
     
-    # Now kill the actual processes using specific paths (Graceful SIGTERM)
-    pkill -f "dotnet.*/opt/Radarr"
-    pkill -f "dotnet.*/opt/Sonarr"
-    pkill -f "dotnet.*/opt/Prowlarr"
+    # Now kill the actual processes using absolute paths (Graceful SIGTERM)
+    pkill -f "/dotnet.*/opt/Radarr"
+    pkill -f "/dotnet.*/opt/Sonarr"
+    pkill -f "/dotnet.*/opt/Prowlarr"
 }
 
 stop_bazarr() {
     echo "Stopping Bazarr..."
-    # Match the specific path to bazarr (Graceful SIGTERM)
-    pkill -f "python.*bazarr/main.py"
-    pkill -f "python.*bazarr.py"
+    # Match the specific absolute path to bazarr (Graceful SIGTERM)
+    pkill -f "/python.*/opt/bazarr/bazarr/main.py"
+    pkill -f "/python.*/opt/bazarr/bazarr.py"
 }
 
 stop_transmission() {
@@ -83,7 +83,7 @@ stop_transmission() {
 stop_jellyfin() {
     echo "Stopping Jellyfin..."
     sv down jellyfin 2>/dev/null
-    pkill -f "bin/jellyfin"
+    pkill -f "/bin/jellyfin"
 }
 
 check_status() {
