@@ -110,6 +110,28 @@ You can use `./service-control.sh` for granular control:
 
 **Note on Stability:** The stack includes watchdogs for Radarr, Sonarr, and Prowlarr. If a service exits or crashes, it will automatically restart after a 10-second delay.
 
+---
+
+## 🆙 Updating the Server
+
+### 1. Radarr, Sonarr, and Prowlarr
+You can update these directly from their respective Web UIs. However, because updates overwrite the native shims, you must perform a "Quick Fix" after the update completes:
+
+1.  Click **Update** in the Web UI.
+2.  Once finished, run: `./service-control.sh re-shim`
+3.  Restart services: `./service-control.sh start-all`
+
+### 2. Bazarr
+Update via the Web UI. If the update breaks your custom Python requirements, simply run `./setup_media_server.sh` to restore your working configuration from `custom/bazarr/`.
+
+### 3. Jellyfin & System Packages
+Managed via the Termux package manager:
+```bash
+pkg upgrade
+```
+
+---
+
 | Service | Access URL |
 | :--- | :--- |
 | **Jellyfin** | `http://[YOUR_IP]:8096` |
