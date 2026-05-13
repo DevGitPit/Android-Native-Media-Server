@@ -1,29 +1,14 @@
 #!/data/data/com.termux/files/usr/bin/bash
 
+WORKDIR="$HOME/arrFin"
+cd "$WORKDIR" || exit
+
 echo "🛑 Stopping Media Server Stack..."
 
-# 1. Stop the start script / watchdog first
-echo "Stopping Watchdog..."
-pkill -f "start-server.sh"
+# 1. Stop the battery monitor first to prevent it from restarting things
+bash ./battery-monitor.sh --stop
 
-# 2. Stop Radarr, Sonarr, and Prowlarr (.NET Apps)
-echo "Stopping Radarr, Sonarr, and Prowlarr..."
-pkill -f "Radarr.dll"
-pkill -f "Sonarr.dll"
-pkill -f "Prowlarr.dll"
-pkill -f "dotnet"
-
-# 3. Stop Jellyfin (Runit)
-echo "Stopping Jellyfin..."
-sv down jellyfin 2>/dev/null
-pkill -f "jellyfin"
-
-# 4. Stop Transmission (Runit)
-echo "Stopping Transmission..."
-sv down transmission 2>/dev/null
-pkill -f "transmission-daemon"
-
-# 5. Release Wake Lock
-termux-wake-unlock
+# 2. Stop all services
+bash ./service-control.sh stop-all
 
 echo "All services STOPPED! 💤"
