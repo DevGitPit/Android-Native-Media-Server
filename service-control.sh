@@ -135,7 +135,8 @@ case "$1" in
         ;;
     status)
         echo "--- Service Status ---"
-        check_status "Jellyfin" "jellyfin" "true"
+        # Use specific paths or exact matches where possible
+        check_status "Jellyfin" "/bin/jellyfin" "false"
         check_status "Transmission" "transmission-daemon" "true"
         check_status "Radarr" "Radarr.dll" "false"
         check_status "Sonarr" "Sonarr.dll" "false"
