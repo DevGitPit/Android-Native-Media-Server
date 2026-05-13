@@ -121,18 +121,24 @@ Once installed, you can launch the entire stack (including Transmission and Jell
 ./start-server.sh
 ```
 
-**Note on Stability:** The start script includes a **Watchdog for Sonarr**. If Sonarr exits or crashes (common due to Android's memory management or native library calls), the script will automatically restart it after a 10-second delay to ensure maximum uptime.
+**Battery Automation:** The server now includes a background monitor that automatically manages power:
+*   **Full Mode:** (Battery > 50% or Charging) All services run normally.
+*   **Eco Mode:** (Battery ≤ 50% and Discharging) All services except Jellyfin are stopped to save battery.
+*   **Notifications:** You will receive a Termux notification whenever the server switches modes.
 
-To stop all services and free up memory:
+To stop all services and the monitor:
 
 ```bash
 ./stop-server.sh
 ```
 
-These scripts handle:
-*   **Wake Lock:** Prevents Android from killing the processes.
-*   **Environment:** Sets the required `.NET` variables.
-*   **Services:** Starts all 5 core server processes in the background.
+### 🛠️ Manual Service Control
+You can use `./service-control.sh` for granular control:
+*   `./service-control.sh status`: See what's running.
+*   `./service-control.sh stop-eco`: Manually enter Eco Mode.
+*   `./service-control.sh start-all`: Force start everything.
+
+**Note on Stability:** The start script includes watchdogs for Radarr, Sonarr, and Prowlarr. If a service exits or crashes, it will automatically restart after a 10-second delay.
 
 | Service | Access URL |
 | :--- | :--- |

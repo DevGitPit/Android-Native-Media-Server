@@ -4,3 +4,5 @@ backup_so/
 .gemini/
 check-memory.sh
 .dual-graph/
+CONTEXT.md
+GEMINI.md
