@@ -91,7 +91,11 @@ stop_transmission() {
 stop_jellyfin() {
     echo "Stopping Jellyfin..."
     sv down jellyfin 2>/dev/null
+    # Try graceful SIGTERM first
     pkill -f "/bin/jellyfin"
+    sleep 2
+    # Forceful SIGKILL if still alive
+    pkill -9 -f "/bin/jellyfin"
 }
 
 check_status() {
