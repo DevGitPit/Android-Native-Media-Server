@@ -6,3 +6,8 @@ check-memory.sh
 .dual-graph/
 CONTEXT.md
 GEMINI.md
+PLAN.md
+vuetorrent.zip
+.battery_monitor.pid
+pids/
+
