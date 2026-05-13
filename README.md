@@ -1,10 +1,11 @@
 # Android Media Server Guide: Native Termux Edition 🚀
 
-This guide provides the definitive steps to run a high-performance media server (Jellyfin, Radarr, Sonarr, and Prowlarr) **100% natively** on Android via Termux. This method completely bypasses PRoot/Linux emulation, resulting in significantly lower CPU and RAM usage.
+This guide provides the definitive steps to run a high-performance media server (Jellyfin, Radarr, Sonarr, Prowlarr, and Bazarr) **100% natively** on Android via Termux. This method completely bypasses PRoot/Linux emulation, resulting in significantly lower CPU and RAM usage.
 
 ## 🛠️ Prerequisites
 * **Android Device:** Android 8.0 or higher.
 * **Termux (F-Droid):** Do not use the Play Store version.
+* **Termux:API (F-Droid):** Required for battery automation and notifications.
 * **TUR Repo:** Enabled for native packages.
 
 ---
@@ -40,7 +41,7 @@ chmod +x setup_media_server.sh && ./setup_media_server.sh
 ```bash
 pkg update -y && pkg upgrade -y
 pkg install tur-repo -y
-pkg install wget curl sqlite libicu mono libesqlite3 ffmpeg dotnet-runtime-9.0 jellyfin-server -y
+pkg install wget curl sqlite libicu mono libesqlite3 ffmpeg jq termux-api dotnet-runtime-9.0 jellyfin-server -y
 ```
 
 ### 2. Setup the *Arr Stack
@@ -78,52 +79,21 @@ For **each** application (Radarr, Sonarr, Prowlarr), you **MUST** perform the fo
     sed -i 's/"6\.0\.0"/"9.0.0"/g' $PREFIX/opt/[AppName]/[AppName].deps.json
     ```
 4.  **Update the Runtime Config:**
-    Replace the contents of `$PREFIX/opt/[AppName]/[AppName].runtimeconfig.json` with:
-    ```json
-    {
-      "runtimeOptions": {
-        "tfm": "net9.0",
-        "frameworks": [
-          { "name": "Microsoft.NETCore.App", "version": "9.0.0" },
-          { "name": "Microsoft.AspNetCore.App", "version": "9.0.0" }
-        ]
-      }
-    }
-    ```
-
----
-
-## ▶️ Starting the Services
-
-Before starting, it is recommended to set the `.NET` root and library path environment variables so the applications can find the native runtime and libraries:
-
-```bash
-export DOTNET_ROOT=$PREFIX/lib/dotnet
-export LD_LIBRARY_PATH=$PREFIX/lib
-```
-
-| Service | Command | Access URL |
-| :--- | :--- | :--- |
-| **Jellyfin** | `jellyfin &` | `http://[YOUR_IP]:8096` |
-| **Radarr** | `dotnet $PREFIX/opt/Radarr/Radarr.dll -nobrowser &` | `http://[YOUR_IP]:7878` |
-| **Sonarr** | `dotnet $PREFIX/opt/Sonarr/Sonarr.dll -nobrowser &` | `http://[YOUR_IP]:8989` |
-| **Prowlarr** | `dotnet $PREFIX/opt/Prowlarr/Prowlarr.dll -nobrowser &` | `http://[YOUR_IP]:9696` |
-
-> **Pro-Tip:** Add `export DOTNET_ROOT=$PREFIX/lib/dotnet` and `export LD_LIBRARY_PATH=$PREFIX/lib` to your `~/.bashrc` file so you don't have to type them every time.
+    Update `$PREFIX/opt/[AppName]/[AppName].runtimeconfig.json` to use `net9.0`.
 
 ---
 
 ## ▶️ Running the Server
 
-Once installed, you can launch the entire stack (including Transmission and Jellyfin) using the master start script:
+Once installed, you can launch the entire stack (including Transmission, Jellyfin, and Bazarr) using the master start script:
 
 ```bash
 ./start-server.sh
 ```
 
-**Battery Automation:** The server now includes a background monitor that automatically manages power:
+**Battery Automation:** The server includes a background monitor (`battery-monitor.sh`) that manages power:
 *   **Full Mode:** (Battery > 50% or Charging) All services run normally.
-*   **Eco Mode:** (Battery ≤ 50% and Discharging) All services except Jellyfin are stopped to save battery.
+*   **Eco Mode:** (Battery ≤ 50% and Discharging) All services except Jellyfin are stopped to preserve battery.
 *   **Notifications:** You will receive a Termux notification whenever the server switches modes.
 
 To stop all services and the monitor:
@@ -134,11 +104,11 @@ To stop all services and the monitor:
 
 ### 🛠️ Manual Service Control
 You can use `./service-control.sh` for granular control:
-*   `./service-control.sh status`: See what's running.
+*   `./service-control.sh status`: See which services are currently running.
 *   `./service-control.sh stop-eco`: Manually enter Eco Mode.
 *   `./service-control.sh start-all`: Force start everything.
 
-**Note on Stability:** The start script includes watchdogs for Radarr, Sonarr, and Prowlarr. If a service exits or crashes, it will automatically restart after a 10-second delay.
+**Note on Stability:** The stack includes watchdogs for Radarr, Sonarr, and Prowlarr. If a service exits or crashes, it will automatically restart after a 10-second delay.
 
 | Service | Access URL |
 | :--- | :--- |
@@ -146,7 +116,15 @@ You can use `./service-control.sh` for granular control:
 | **Radarr** | `http://[YOUR_IP]:7878` |
 | **Sonarr** | `http://[YOUR_IP]:8989` |
 | **Prowlarr** | `http://[YOUR_IP]:9696` |
+| **Bazarr** | `http://[YOUR_IP]:6767` |
 | **Transmission** | `http://[YOUR_IP]:9091` |
+
+---
+
+## 🔧 Custom Tweaks & Persistence
+This repository supports custom file overrides (e.g., for hardware-specific Python `requirements.txt` in Bazarr).
+*   Any files placed in `custom/bazarr/` will be automatically applied to the Bazarr installation directory during setup.
+*   Use this to persist custom patches, configs, or library requirements that aren't part of the standard distribution.
 
 ---
 
@@ -156,16 +134,11 @@ If you wish to remove the media server and all its configurations:
 
 ### Automated Uninstall
 ```bash
-# 1. Download the script
-wget https://raw.githubusercontent.com/DevGitPit/Android-Native-Media-Server/main/uninstall_media_server.sh
-
-# 2. Run it
-chmod +x uninstall_media_server.sh && ./uninstall_media_server.sh
+./uninstall_media_server.sh
 ```
 
 ### Manual Cleanup
-1.  **Stop services:** `pkill dotnet` and `pkill jellyfin`.
+1.  **Stop services:** `./stop-server.sh`.
 2.  **Remove folders:** `rm -rf $PREFIX/opt/{Radarr,Sonarr,Prowlarr}`.
 3.  **Delete configs:** `rm -rf ~/.config/{Radarr,Sonarr,Prowlarr,jellyfin}`.
-4.  **Uninstall packages:** `pkg uninstall dotnet-runtime-9.0 jellyfin-server mono libesqlite3 sqlite -y`.
-5.  **Remove DOTNET_ROOT** from your `~/.bashrc`.
+4.  **Uninstall packages:** `pkg uninstall dotnet-runtime-9.0 jellyfin-server mono libesqlite3 sqlite jq termux-api -y`.
