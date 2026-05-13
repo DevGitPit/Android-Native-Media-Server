@@ -77,7 +77,8 @@ stop_bazarr() {
 stop_transmission() {
     echo "Stopping Transmission..."
     sv down transmission 2>/dev/null
-    pkill -x "transmission-daemon"
+    # Transmission can be stubborn, using SIGKILL (-9) for reliability
+    pkill -9 -x "transmission-daemon"
 }
 
 stop_jellyfin() {
@@ -89,10 +90,22 @@ stop_jellyfin() {
 check_status() {
     local service=$1
     local pattern=$2
-    if pgrep -f "$pattern" > /dev/null; then
-        echo "[ON] $service"
+    local exact=$3
+    if [ "$exact" == "true" ]; then
+        if pgrep -x "$pattern" > /dev/null; then
+            echo "[ON] $service"
+        else
+            echo "[OFF] $service"
+        fi
     else
-        echo "[OFF] $service"
+        # When using -f, we must avoid matching the check_status/pgrep command itself
+        # We do this by checking for more than 1 match if the pattern is broad, 
+        # or just being specific.
+        if pgrep -f "$pattern" | grep -v "$$" > /dev/null; then
+            echo "[ON] $service"
+        else
+            echo "[OFF] $service"
+        fi
     fi
 }
 
@@ -122,12 +135,12 @@ case "$1" in
         ;;
     status)
         echo "--- Service Status ---"
-        check_status "Jellyfin" "bin/jellyfin"
-        check_status "Transmission" "transmission-daemon"
-        check_status "Radarr" "Radarr.dll"
-        check_status "Sonarr" "Sonarr.dll"
-        check_status "Prowlarr" "Prowlarr.dll"
-        check_status "Bazarr" "bazarr/main.py"
+        check_status "Jellyfin" "jellyfin" "true"
+        check_status "Transmission" "transmission-daemon" "true"
+        check_status "Radarr" "Radarr.dll" "false"
+        check_status "Sonarr" "Sonarr.dll" "false"
+        check_status "Prowlarr" "Prowlarr.dll" "false"
+        check_status "Bazarr" "bazarr/main.py" "false"
         ;;
     re-shim)
         echo "🔧 Re-applying native library shims and patches..."
