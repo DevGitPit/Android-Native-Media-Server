@@ -69,9 +69,9 @@ stop_arr_apps() {
 
 stop_bazarr() {
     echo "Stopping Bazarr..."
-    # Match the specific absolute path to bazarr (Graceful SIGTERM)
-    pkill -f "/python.*/opt/bazarr/bazarr/main.py"
-    pkill -f "/python.*/opt/bazarr/bazarr.py"
+    # Bazarr often ignores SIGTERM, using SIGKILL (-9) for reliability
+    pkill -9 -f "/python.*/opt/bazarr/bazarr/main.py"
+    pkill -9 -f "/python.*/opt/bazarr/bazarr.py"
 }
 
 stop_transmission() {
