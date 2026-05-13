@@ -127,10 +127,12 @@ case "$1" in
         notify "All services STOPPED 💤"
         ;;
     stop-eco)
+        # Ensure Jellyfin is running
+        start_jellyfin
+        # Stop everything else
         stop_bazarr
         stop_arr_apps
         stop_transmission
-        # Jellyfin stays up
         notify "Eco Mode: Only Jellyfin is running 🔋"
         ;;
     status)
