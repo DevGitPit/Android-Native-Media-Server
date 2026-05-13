@@ -148,6 +148,9 @@ This repository supports custom file overrides (e.g., for hardware-specific Pyth
 *   Any files placed in `custom/bazarr/` will be automatically applied to the Bazarr installation directory during setup.
 *   Use this to persist custom patches, configs, or library requirements that aren't part of the standard distribution.
 
+> [!IMPORTANT]
+> **Note for Users:** The `custom/bazarr/requirements.txt` included here contains specific tweaks (like pinning `numpy < 2.4.0`) to prevent segmentation faults on certain older Android hardware. If you are on a newer device or a different Termux environment, you may need to adjust these pins or remove them to match your system's current dependencies. Always check your startup logs if Bazarr fails to launch.
+
 ---
 
 ## 🗑️ Uninstallation
