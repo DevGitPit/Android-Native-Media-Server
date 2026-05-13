@@ -15,17 +15,13 @@ notify() {
 }
 
 start_jellyfin() {
-    if ! pgrep -f "jellyfin" > /dev/null; then
-        echo "$(date): Starting Jellyfin..." >> "$LOG_DIR/jellyfin.log"
-        jellyfin > "$LOG_DIR/jellyfin_run.log" 2>&1 &
-    fi
+    echo "$(date): Starting Jellyfin (via sv)..." >> "$LOG_DIR/jellyfin.log"
+    sv up jellyfin 2>/dev/null || jellyfin > "$LOG_DIR/jellyfin_run.log" 2>&1 &
 }
 
 start_transmission() {
-    if ! pgrep -f "transmission-daemon" > /dev/null; then
-        echo "$(date): Starting Transmission..." >> "$LOG_DIR/transmission.log"
-        transmission-daemon -w ~/media/downloads -T 2>/dev/null
-    fi
+    echo "$(date): Starting Transmission (via sv)..." >> "$LOG_DIR/transmission.log"
+    sv up transmission 2>/dev/null || transmission-daemon -w ~/media/downloads -T 2>/dev/null
 }
 
 start_arr_apps() {
@@ -45,7 +41,7 @@ start_arr_apps() {
 }
 
 start_bazarr() {
-    if ! pgrep -f "bazarr.py" > /dev/null; then
+    if ! pgrep -f "bazarr.*main.py" > /dev/null; then
         echo "$(date): Starting Bazarr..." >> "$LOG_DIR/bazarr.log"
         python "$BAZARR_PATH" >> "$LOG_DIR/bazarr.log" 2>&1 &
     fi
@@ -53,9 +49,7 @@ start_bazarr() {
 
 stop_arr_apps() {
     echo "Stopping Radarr, Sonarr, Prowlarr watchdogs and processes..."
-    # Kill the subshell loops first
     pkill -f "dotnet.*/opt/(Radarr|Sonarr|Prowlarr)" 
-    # Kill the actual dlls
     pkill -f "Radarr.dll"
     pkill -f "Sonarr.dll"
     pkill -f "Prowlarr.dll"
@@ -70,12 +64,24 @@ stop_bazarr() {
 
 stop_transmission() {
     echo "Stopping Transmission..."
-    pkill -f "transmission-daemon"
+    sv down transmission 2>/dev/null
+    pkill -x "transmission-daemon"
 }
 
 stop_jellyfin() {
     echo "Stopping Jellyfin..."
-    pkill -f "jellyfin"
+    sv down jellyfin 2>/dev/null
+    pkill -f "bin/jellyfin"
+}
+
+check_status() {
+    local service=$1
+    local pattern=$2
+    if pgrep -f "$pattern" > /dev/null; then
+        echo "[ON] $service"
+    else
+        echo "[OFF] $service"
+    fi
 }
 
 case "$1" in
@@ -104,12 +110,13 @@ case "$1" in
         ;;
     status)
         echo "--- Service Status ---"
-        pgrep -f "jellyfin" > /dev/null && echo "[ON] Jellyfin" || echo "[OFF] Jellyfin"
-        pgrep -f "transmission-daemon" > /dev/null && echo "[ON] Transmission" || echo "[OFF] Transmission"
-        pgrep -f "Radarr.dll" > /dev/null && echo "[ON] Radarr" || echo "[OFF] Radarr"
-        pgrep -f "Sonarr.dll" > /dev/null && echo "[ON] Sonarr" || echo "[OFF] Sonarr"
-        pgrep -f "Prowlarr.dll" > /dev/null && echo "[ON] Prowlarr" || echo "[OFF] Prowlarr"
-        pgrep -f "bazarr.py" > /dev/null && echo "[ON] Bazarr" || echo "[OFF] Bazarr"
+        # Be careful with patterns to avoid matching runsv or svlogd
+        check_status "Jellyfin" "bin/jellyfin"
+        check_status "Transmission" "transmission-daemon"
+        check_status "Radarr" "Radarr.dll"
+        check_status "Sonarr" "Sonarr.dll"
+        check_status "Prowlarr" "Prowlarr.dll"
+        check_status "Bazarr" "bazarr/main.py"
         ;;
     re-shim)
         echo "🔧 Re-applying native library shims and patches..."
