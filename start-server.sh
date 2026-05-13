@@ -1,6 +1,6 @@
 #!/data/data/com.termux/files/usr/bin/bash
 
-WORKDIR="/data/data/com.termux/files/home/arrFin"
+WORKDIR="$HOME/arrFin"
 cd "$WORKDIR" || exit
 
 echo "🚀 Starting Media Server Stack with Battery Automation..."

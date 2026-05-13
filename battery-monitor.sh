@@ -1,7 +1,7 @@
 #!/data/data/com.termux/files/usr/bin/bash
 
 # Configuration
-WORKDIR="/data/data/com.termux/files/home/arrFin"
+WORKDIR="$HOME/arrFin"
 CONTROL_SCRIPT="$WORKDIR/service-control.sh"
 PID_FILE="$WORKDIR/.battery_monitor.pid"
 THRESHOLD=50
@@ -30,12 +30,7 @@ monitor_loop() {
         # Full Power if Level > THRESHOLD OR Status == "CHARGING" OR Status == "FULL"
         # Eco Power if Level <= THRESHOLD AND Status != "CHARGING" AND Status != "FULL"
         
-        IS_CHARGING=false
-        if [[ "$STATUS" == "CHARGING" || "$STATUS" == "FULL" ]]; then
-            IS_CHARGING=true
-        fi
-        
-        if [[ "$LEVEL" -gt "$THRESHOLD" || "$IS_CHARGING" == true ]]; then
+        if [[ "$LEVEL" -gt "$THRESHOLD" || "$STATUS" == "CHARGING" || "$STATUS" == "FULL" ]]; then
             TARGET_MODE="full"
         else
             TARGET_MODE="eco"

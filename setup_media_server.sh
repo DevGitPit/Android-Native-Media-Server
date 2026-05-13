@@ -100,7 +100,7 @@ setup_app "Prowlarr" "$PROWLARR_URL"
 
 # 4. Apply Custom Tweaks (e.g., Bazarr)
 echo "🔧 Applying custom tweaks..."
-BAZARR_INSTALLED_DIR="/data/data/com.termux/files/usr/opt/bazarr"
+BAZARR_INSTALLED_DIR="$PREFIX/opt/bazarr"
 if [ -d "$WORKDIR/custom/bazarr" ] && [ -d "$BAZARR_INSTALLED_DIR" ]; then
     echo "📦 Applying custom Bazarr tweaks..."
     cp "$WORKDIR/custom/bazarr/"* "$BAZARR_INSTALLED_DIR/"

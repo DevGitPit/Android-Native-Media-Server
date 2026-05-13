@@ -1,8 +1,8 @@
 #!/data/data/com.termux/files/usr/bin/bash
 
 # Configuration
-WORKDIR="/data/data/com.termux/files/home/arrFin"
-BAZARR_PATH="/data/data/com.termux/files/usr/opt/bazarr/bazarr.py"
+WORKDIR="$HOME/arrFin"
+BAZARR_PATH="$PREFIX/opt/bazarr/bazarr.py"
 LOG_DIR="$WORKDIR/logs"
 PID_DIR="$WORKDIR/pids"
 mkdir -p "$LOG_DIR" "$PID_DIR"
@@ -109,10 +109,8 @@ check_status() {
             echo "[OFF] $service"
         fi
     else
-        # When using -f, we must avoid matching the check_status/pgrep command itself
-        # We do this by checking for more than 1 match if the pattern is broad, 
-        # or just being specific.
-        if pgrep -f "$pattern" | grep -v "$$" > /dev/null; then
+        # Use character class trick (e.g., [j]ellyfin) in pattern to avoid matching pgrep itself
+        if pgrep -f "$pattern" > /dev/null; then
             echo "[ON] $service"
         else
             echo "[OFF] $service"
@@ -148,13 +146,13 @@ case "$1" in
         ;;
     status)
         echo "--- Service Status ---"
-        # Use specific paths or exact matches where possible
-        check_status "Jellyfin" "/bin/jellyfin" "false"
-        check_status "Transmission" "transmission-daemon" "true"
-        check_status "Radarr" "Radarr.dll" "false"
-        check_status "Sonarr" "Sonarr.dll" "false"
-        check_status "Prowlarr" "Prowlarr.dll" "false"
-        check_status "Bazarr" "bazarr/main.py" "false"
+        # Use character classes [x] to prevent pgrep from matching its own command line
+        check_status "Jellyfin" "/bin/[j]ellyfin" "false"
+        check_status "Transmission" "[t]ransmission-daemon" "true"
+        check_status "Radarr" "[R]adarr.dll" "false"
+        check_status "Sonarr" "[S]onarr.dll" "false"
+        check_status "Prowlarr" "[P]rowlarr.dll" "false"
+        check_status "Bazarr" "bazarr/[m]ain.py" "false"
         ;;
     re-shim)
         echo "🔧 Re-applying native library shims and patches..."
