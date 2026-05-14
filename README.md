@@ -100,6 +100,10 @@ The server now features an advanced, battery-efficient scheduling system that re
     3.  **Active downloads** are present in Transmission.
 *   **Dynamic Sleep:** If no media is due for release, the system enters a deep sleep. It calculates the exact time of the next release from the Sonarr/Radarr databases and schedules a wake-up call for **1 hour after release**.
 *   **Heartbeat:** A 6-hour safety heartbeat ensures the system occasionally checks for metadata updates even during long idle periods.
+*   **Interactive Control:** Notifications now include action buttons for quick management:
+    *   **START:** Force-starts the entire stack and enables **Manual Override** (prevents automated shutdown).
+    *   **ECO:** Stops non-essential services (Jellyfin only) and returns to **Automated Mode**.
+    *   **STOP:** Gracefully shuts down all services including Jellyfin.
 
 **Manual Control:**
 *   `./service-control.sh status`: Check current service states.
