@@ -15,9 +15,9 @@ notify() {
     termux-notification -t "Media Server" -c "$1" \
         --id "arrfin_status" \
         --priority "high" \
-        --button1 "START ALL" --button1-action "bash $WORKDIR/service-control.sh start-all" \
-        --button2 "STOP ECO" --button2-action "bash $WORKDIR/service-control.sh stop-eco" \
-        --button3 "STOP ALL" --button3-action "bash $WORKDIR/service-control.sh stop-all"
+        --button1 "START" --button1-action "bash $WORKDIR/service-control.sh start-all" \
+        --button2 "ECO" --button2-action "bash $WORKDIR/service-control.sh stop-eco" \
+        --button3 "STOP" --button3-action "bash $WORKDIR/service-control.sh stop-all"
 }
 
 start_jellyfin() {
