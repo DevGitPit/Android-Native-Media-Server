@@ -12,7 +12,12 @@ export DOTNET_ROOT=$PREFIX/lib/dotnet
 export LD_LIBRARY_PATH=$PREFIX/lib
 
 notify() {
-    termux-notification -t "Media Server" -c "$1" --id "arrfin_status" --priority "high"
+    termux-notification -t "Media Server" -c "$1" \
+        --id "arrfin_status" \
+        --priority "high" \
+        --button1 "START ALL" --button1-action "bash $WORKDIR/service-control.sh start-all" \
+        --button2 "STOP ECO" --button2-action "bash $WORKDIR/service-control.sh stop-eco" \
+        --button3 "STOP ALL" --button3-action "bash $WORKDIR/service-control.sh stop-all"
 }
 
 start_jellyfin() {
