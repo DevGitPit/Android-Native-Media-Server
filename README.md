@@ -85,28 +85,39 @@ For **each** application (Radarr, Sonarr, Prowlarr), you **MUST** perform the fo
 
 ## ▶️ Running the Server
 
-Once installed, you can launch the entire stack (including Transmission, Jellyfin, and Bazarr) using the master start script:
+Once installed, you can launch the entire stack using the master start script:
 
 ```bash
 ./start-server.sh
 ```
 
-**Battery Automation:** The server includes a background monitor (`battery-monitor.sh`) that manages power:
-*   **Full Mode:** (Battery > 50% or Charging) All services run normally.
-*   **Eco Mode:** (Battery ≤ 50% and Discharging) All services except Jellyfin are stopped to preserve battery.
-*   **Notifications:** You will receive a Termux notification whenever the server switches modes.
+### 🧠 Smart Event-Driven Scheduler (New!)
+The server now features an advanced, battery-efficient scheduling system that replaces constant background polling with Android-native job scheduling.
 
-To stop all services and the monitor:
+*   **Logic:** The system only wakes up the media stack if:
+    1.  **Battery is healthy** (>50% or Charging).
+    2.  **Media is missing** (A monitored show or movie aired > 1 hour ago).
+    3.  **Active downloads** are present in Transmission.
+*   **Dynamic Sleep:** If no media is due for release, the system enters a deep sleep. It calculates the exact time of the next release from the Sonarr/Radarr databases and schedules a wake-up call for **1 hour after release**.
+*   **Heartbeat:** A 6-hour safety heartbeat ensures the system occasionally checks for metadata updates even during long idle periods.
 
+**Manual Control:**
+*   `./service-control.sh status`: Check current service states.
+*   `./check-needs.sh all`: See what the "Smart" logic currently detects.
+*   `tail -f logs/scheduler.log`: Monitor the scheduler's decision-making process.
+
+To stop all services and the scheduler:
 ```bash
 ./stop-server.sh
 ```
 
-### 🛠️ Manual Service Control
+---
+
+## 🛠️ Service Control & Monitoring
 You can use `./service-control.sh` for granular control:
-*   `./service-control.sh status`: See which services are currently running.
-*   `./service-control.sh stop-eco`: Manually enter Eco Mode.
-*   `./service-control.sh start-all`: Force start everything.
+*   `smart-start`: Starts only the apps needed for current tasks.
+*   `stop-eco`: Manually enter Eco Mode (Jellyfin only).
+*   `start-all`: Force start everything.
 
 **Note on Stability:** The stack includes watchdogs for Radarr, Sonarr, and Prowlarr. If a service exits or crashes, it will automatically restart after a 10-second delay.
 

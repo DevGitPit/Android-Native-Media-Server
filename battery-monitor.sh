@@ -5,7 +5,7 @@ WORKDIR="$HOME/arrFin"
 CONTROL_SCRIPT="$WORKDIR/service-control.sh"
 PID_FILE="$WORKDIR/.battery_monitor.pid"
 THRESHOLD=50
-CHECK_INTERVAL=120 # Seconds
+CHECK_INTERVAL=300 # 5 Minutes (increased from 120s for better efficiency)
 
 monitor_loop() {
     # Initial state: start as "none" to force a log/check on the first run
@@ -31,18 +31,28 @@ monitor_loop() {
         # Eco Power if Level <= THRESHOLD AND Status != "CHARGING" AND Status != "FULL"
         
         if [[ "$LEVEL" -gt "$THRESHOLD" || "$STATUS" == "CHARGING" || "$STATUS" == "FULL" ]]; then
-            TARGET_MODE="full"
+            # Battery is good, check if we actually NEED to run anything
+            NEEDS=$(bash "$WORKDIR/check-needs.sh" all)
+            if echo "$NEEDS" | grep -vE "IDLE" | grep -qE "MISSING|UPCOMING|ACTIVE"; then
+                TARGET_MODE="full"
+                REASON=$(echo "$NEEDS" | grep -vE "IDLE" | tr '\n' ' ')
+                # Granular scaling: start what is needed, stop what is not
+                bash "$CONTROL_SCRIPT" smart-start "$NEEDS"
+                bash "$CONTROL_SCRIPT" stop-smart "$NEEDS"
+            else
+                TARGET_MODE="eco"
+                REASON="No pending media activity"
+            fi
         else
             TARGET_MODE="eco"
+            REASON="Battery low ($LEVEL%)"
         fi
         
         # Transition logic
         if [[ "$TARGET_MODE" != "$CURRENT_MODE" ]]; then
-            echo "$(date): Battery at $LEVEL%, Status: $STATUS. Mode: $TARGET_MODE" >> "$WORKDIR/logs/monitor.log"
+            echo "$(date): Battery at $LEVEL%, Status: $STATUS. Mode: $TARGET_MODE (Reason: $REASON)" >> "$WORKDIR/logs/monitor.log"
             
-            if [[ "$TARGET_MODE" == "full" ]]; then
-                bash "$CONTROL_SCRIPT" start-all
-            else
+            if [[ "$TARGET_MODE" == "eco" ]]; then
                 bash "$CONTROL_SCRIPT" stop-eco
             fi
             CURRENT_MODE="$TARGET_MODE"
@@ -61,6 +71,38 @@ monitor_loop() {
 }
 
 case "$1" in
+    --run-once)
+        # Perform a single pass of the logic
+        BATTERY_INFO=$(termux-battery-status 2>/dev/null)
+        LEVEL=$(echo "$BATTERY_INFO" | jq -r '.percentage // 0')
+        STATUS=$(echo "$BATTERY_INFO" | jq -r '.status // "DISCHARGING"')
+        if [[ ! "$LEVEL" =~ ^[0-9]+$ ]]; then LEVEL=0; fi
+
+        # Load previous mode
+        STATE_FILE="$WORKDIR/.current_mode"
+        [[ -f "$STATE_FILE" ]] && PREV_MODE=$(cat "$STATE_FILE") || PREV_MODE="none"
+
+        if [[ "$LEVEL" -gt "$THRESHOLD" || "$STATUS" == "CHARGING" || "$STATUS" == "FULL" ]]; then
+            NEEDS=$(bash "$WORKDIR/check-needs.sh" all)
+            if echo "$NEEDS" | grep -vE "IDLE" | grep -qE "MISSING|UPCOMING|ACTIVE"; then
+                NEW_MODE="full"
+                bash "$CONTROL_SCRIPT" smart-start "$NEEDS"
+                bash "$CONTROL_SCRIPT" stop-smart "$NEEDS"
+            else
+                NEW_MODE="eco"
+                # Only notify if we weren't already in eco
+                if [[ "$PREV_MODE" != "eco" ]]; then
+                    bash "$CONTROL_SCRIPT" stop-eco
+                fi
+            fi
+        else
+            NEW_MODE="eco"
+            if [[ "$PREV_MODE" != "eco" ]]; then
+                bash "$CONTROL_SCRIPT" stop-eco
+            fi
+        fi
+        echo "$NEW_MODE" > "$STATE_FILE"
+        ;;
     --start)
         if [[ -f "$PID_FILE" ]]; then
             PID=$(cat "$PID_FILE")
