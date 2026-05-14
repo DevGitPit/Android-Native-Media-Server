@@ -5,9 +5,14 @@ LOG="$WORKDIR/logs/scheduler.log"
 
 echo "$(date): Scheduler wake-up triggered." >> "$LOG"
 
-# 1. Run the monitor logic once to start what is needed
-# This will also stop things if they are no longer needed
-bash "$WORKDIR/battery-monitor.sh" --run-once
+# Check for Manual Override
+if [[ -f "$WORKDIR/.manual_override" ]]; then
+    echo "$(date): Manual override detected. Skipping automated management." >> "$LOG"
+else
+    # 1. Run the monitor logic once to start what is needed
+    # This will also stop things if they are no longer needed
+    bash "$WORKDIR/battery-monitor.sh" --run-once
+fi
 
 # 2. Calculate the optimal next wake-up time
 NEXT_EVENT=$(bash "$WORKDIR/check-needs.sh" next)

@@ -149,11 +149,12 @@ check_status() {
 case "$1" in
     start-all)
         termux-wake-lock
+        touch "$WORKDIR/.manual_override"
         start_jellyfin
         start_transmission
         start_arr_apps
         start_bazarr
-        notify "All services are UP 🚀"
+        notify "Manual Mode: All services UP 🚀"
         ;;
     smart-start)
         # $2 will be the output of check-needs.sh
@@ -203,6 +204,7 @@ case "$1" in
         fi
         ;;
     stop-all)
+        rm -f "$WORKDIR/.manual_override"
         stop_bazarr
         stop_arr_apps
         stop_transmission
@@ -211,6 +213,7 @@ case "$1" in
         notify "All services STOPPED 💤"
         ;;
     stop-eco)
+        rm -f "$WORKDIR/.manual_override"
         # Ensure Jellyfin is running
         start_jellyfin
         # Stop everything else
