@@ -82,7 +82,13 @@ setup_app() {
     local name=$1
     local url=$2
     
-    echo "📥 Setting up $name..."
+    # Check if native package is already installed
+    if pkg list-installed "${name,,}" &>/dev/null; then
+        echo "✨ $name is already installed via pkg (Native). Skipping manual setup."
+        return 0
+    fi
+
+    echo "📥 Setting up $name (Legacy Manual)..."
     if [ ! -d "$INSTALL_DIR/$name" ]; then
         wget -O "${name,,}.tar.gz" "$url"
         tar -xvzf "${name,,}.tar.gz" -C "$INSTALL_DIR/"

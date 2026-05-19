@@ -22,20 +22,15 @@ The standard Linux ARM64 binaries for the *Arr stack are compiled for **glibc**.
 
 ## 🚀 Installation Steps
 
-### Option 1: Automated Setup (Recommended)
-The easiest way to get started is to use the provided automation script. It handles all dependencies, library linking, and runtime configurations for you:
+### Option 1: Native Packages (Best Performance)
+The most efficient way to run these apps is using native Termux packages. This eliminates the need for manual library linking and shimming.
 
 ```bash
-# 1. Download the script
-wget https://raw.githubusercontent.com/DevGitPit/Android-Native-Media-Server/main/setup_media_server.sh
-
-# 2. Make it executable and run it
-chmod +x setup_media_server.sh && ./setup_media_server.sh
+pkg install radarr sonarr prowlarr -y
 ```
 
----
-
-### Option 2: Manual Installation (Step-by-Step)
+### Option 2: Automated Setup (Legacy Support)
+If you prefer a managed setup or need a specific version, use the provided script. It handles all dependencies, library linking, and runtime configurations:
 
 ### 1. Update and Dependencies
 ```bash

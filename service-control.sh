@@ -28,13 +28,14 @@ start_transmission() {
 start_arr_apps() {
     for app in Radarr Sonarr Prowlarr; do
         if ! pgrep -f "$app.dll" > /dev/null; then
-            echo "$(date): Starting $app..." >> "$LOG_DIR/${app,,}.log"
+            echo "$(date): Starting $app (Native)..." >> "$LOG_DIR/${app,,}.log"
             # Watchdog loop
             (
                 # Store the actual subshell PID
                 echo "$BASHPID" > "$PID_DIR/${app,,}_watchdog.pid"
                 while true; do
-                    dotnet "$PREFIX/opt/$app/$app.dll" -nobrowser >> "$LOG_DIR/${app,,}.log" 2>&1
+                    # Use the native command from PATH (radarr, sonarr, prowlarr)
+                    ${app,,} -nobrowser >> "$LOG_DIR/${app,,}.log" 2>&1
                     echo "$(date): $app exited, restarting in 10s..." >> "$LOG_DIR/${app,,}.log"
                     sleep 10
                 done
@@ -61,10 +62,10 @@ stop_arr_apps() {
         fi
     done
     
-    # Now kill the actual processes using absolute paths (Graceful SIGTERM)
-    pkill -f "/dotnet.*/opt/Radarr"
-    pkill -f "/dotnet.*/opt/Sonarr"
-    pkill -f "/dotnet.*/opt/Prowlarr"
+    # Now kill the actual processes (Graceful SIGTERM)
+    pkill -f "Radarr.dll"
+    pkill -f "Sonarr.dll"
+    pkill -f "Prowlarr.dll"
 }
 
 stop_bazarr() {
