@@ -34,8 +34,12 @@ start_arr_apps() {
                 # Store the actual subshell PID
                 echo "$BASHPID" > "$PID_DIR/${app,,}_watchdog.pid"
                 while true; do
-                    # Use the native command from PATH (radarr, sonarr, prowlarr)
-                    ${app,,} -nobrowser >> "$LOG_DIR/${app,,}.log" 2>&1
+                    # Use native command if available, otherwise fallback to manual path
+                    if command -v "${app,,}" > /dev/null; then
+                        "${app,,}" -nobrowser >> "$LOG_DIR/${app,,}.log" 2>&1
+                    else
+                        dotnet "$PREFIX/opt/$app/$app.dll" -nobrowser >> "$LOG_DIR/${app,,}.log" 2>&1
+                    fi
                     echo "$(date): $app exited, restarting in 10s..." >> "$LOG_DIR/${app,,}.log"
                     sleep 10
                 done
