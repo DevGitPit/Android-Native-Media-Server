@@ -28,7 +28,7 @@ start_transmission() {
 start_arr_apps() {
     for app in Radarr Sonarr Prowlarr; do
         if ! pgrep -f "$app.dll" > /dev/null; then
-            echo "$(date): Starting $app (Native)..." >> "$LOG_DIR/${app,,}.log"
+            echo "$(date): Starting $app..." >> "$LOG_DIR/${app,,}.log"
             # Watchdog loop
             (
                 # Store the actual subshell PID
