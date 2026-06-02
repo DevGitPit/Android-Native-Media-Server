@@ -93,6 +93,16 @@ stop_transmission() {
     pkill -9 -x "transmission-daemon"
 }
 
+is_transmission_active() {
+    # If Transmission is not running, it's not active
+    if ! pgrep -x "transmission-daemon" > /dev/null; then
+        return 1
+    fi
+    # Check if any torrent is not 100% AND not Idle
+    # (Covers Downloading, Up & Down, Verifying, Uploading if < 100%)
+    transmission-remote -l 2>/dev/null | sed '1d;$d' | grep -v "100%" | grep -v "Idle" > /dev/null
+}
+
 stop_jellyfin() {
     echo "Stopping Jellyfin..."
     sv down jellyfin 2>/dev/null
@@ -150,8 +160,14 @@ case "$1" in
         # Stop everything else
         stop_bazarr
         stop_arr_apps
-        stop_transmission
-        notify "Eco Mode: Only Jellyfin is running 🔋"
+        
+        if is_transmission_active; then
+            echo "Transmission is actively downloading. Keeping it alive..."
+            notify "Eco Mode: Keeping Transmission alive for active downloads 📥"
+        else
+            stop_transmission
+            notify "Eco Mode: Only Jellyfin is running 🔋"
+        fi
         ;;
     status)
         echo "--- Service Status ---"
