@@ -12,9 +12,14 @@ echo "[*] Starting Seerr Termux Setup..."
 
 # 1. Install System Dependencies
 echo "[*] Checking system dependencies..."
-pkg update -y
-pkg install -y nodejs git libvips termux-services
-npm install -g pnpm
+export DEBIAN_FRONTEND=noninteractive
+apt-get update
+apt-get -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade
+apt-get install -y nodejs git libvips termux-services
+if ! command -v pnpm &> /dev/null; then
+    echo "[*] Installing pnpm..."
+    npm install -g pnpm
+fi
 
 # 2. Setup Directory
 if [ ! -d "$REPO_DIR" ]; then
@@ -26,18 +31,17 @@ else
     echo "[*] Updating existing repository..."
     cd "$REPO_DIR"
     
-    echo "[*] Local changes summary:"
-    git status -s
-    git diff --stat || true
+    echo "[*] Resetting local changes to avoid conflicts..."
+    git reset --hard
+    git clean -fd
     
     echo "[*] Syncing with remote..."
-    git stash || true
-    git pull
-    git stash pop || true
+    git fetch origin main
+    git reset --hard origin/main
 fi
 
 # 3. Loosen Node engine requirement to prevent build blocks
-sed -i 's/"node": ".*"/"node": ">=20.0.0"/' package.json
+sed -i '/"engines": {/,/}/ s/"node": ".*"/"node": ">=20.0.0"/' package.json
 
 # 4. Install JS Dependencies
 echo "[*] Installing node modules (this may take a while)..."
@@ -49,13 +53,27 @@ pnpm add @next/swc-wasm-nodejs@14.2.33
 echo "[*] Applying Termux-specific patches..."
 INDEX_JS="node_modules/next/dist/build/swc/index.js"
 if [ -f "$INDEX_JS" ]; then
-    sed -i 's/const isWebContainer = process.versions.webcontainer;/const isWebContainer = true;/g' "$INDEX_JS"
+    sed -i 's/const isWebContainer = .*;/const isWebContainer = true;/g' "$INDEX_JS"
     echo "  [+] Patched Next.js SWC loader for WASM fallback."
 fi
 
-if ! grep -q "swcMinify: false" next.config.js; then
-    sed -i 's/module.exports = {/module.exports = {\n  swcMinify: false,/' next.config.js
-    echo "  [+] Disabled swcMinify in next.config.js."
+# Patch next.config.ts or next.config.js
+CONFIG_FILE=""
+if [ -f "next.config.ts" ]; then
+    CONFIG_FILE="next.config.ts"
+elif [ -f "next.config.js" ]; then
+    CONFIG_FILE="next.config.js"
+fi
+
+if [ -n "$CONFIG_FILE" ]; then
+    if ! grep -q "swcMinify: false" "$CONFIG_FILE"; then
+        if grep -q "const nextConfig: NextConfig = {" "$CONFIG_FILE"; then
+            sed -i 's/const nextConfig: NextConfig = {/const nextConfig: NextConfig = {\n  swcMinify: false,/' "$CONFIG_FILE"
+        elif grep -q "module.exports = {" "$CONFIG_FILE"; then
+            sed -i 's/module.exports = {/module.exports = {\n  swcMinify: false,/' "$CONFIG_FILE"
+        fi
+        echo "  [+] Disabled swcMinify in $CONFIG_FILE."
+    fi
 fi
 
 # 6. Build Project
