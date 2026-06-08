@@ -76,36 +76,43 @@ For **each** application (Radarr, Sonarr, Prowlarr), you **MUST** perform the fo
 4.  **Update the Runtime Config:**
     Update `$PREFIX/opt/[AppName]/[AppName].runtimeconfig.json` to use `net9.0`.
 
+### 🛠️ Manual Service Control & Automation Modes
+The server uses a **Pilot/Auto-pilot** system to manage power and manual interventions:
+
+*   **Auto-pilot Mode 🤖**: The default mode. The `battery-monitor.sh` background script manages services based on battery level (Full vs. Eco).
+*   **Pilot (Manual) Mode 🕹️**: Triggered automatically whenever you run a manual service command. The battery monitor will **stop** overriding your choices until you return to Auto-pilot.
+
+#### **Available Commands**
+Use `./service-control.sh <command>` to manage the stack:
+
+| Command | Description |
+| :--- | :--- |
+| **`status`** | Shows current services and whether you are in `AUTO` or `MANUAL` mode. |
+| **`auto`** | **Resume Auto-pilot**. Clears manual overrides and enforces battery rules immediately. |
+| **`start-all`** | Starts every service and enters Manual Mode. |
+| **`stop-all`** | Stops every service and enters Manual Mode. |
+| **`stop-eco`** | Stops everything except Jellyfin (and active Transmission) and enters Manual Mode. |
+| **`start-<app>`** | Start a specific app (e.g., `start-sonarr`). Enters Manual Mode. |
+| **`stop-<app>`** | Stop a specific app (e.g., `stop-radarr`). Enters Manual Mode. |
+| **`re-shim`** | Re-applies native library patches after an app update. |
+
+> [!TIP]
+> **Example:** If you want to keep Sonarr running while charging even if the battery is low, just run `./service-control.sh start-sonarr`. The monitor will "stand down" and let you work. When finished, run `./service-control.sh auto` to let the battery logic take back over.
+
+---
+
+## 🌟 Extra Features
+
+### Overserr / Jellyseerr Support
+This repository includes a native installer for **Seerr** (a request management tool for your media stack). 
+```bash
+./install-seerr.sh
+```
+*It handles dependencies (Node.js, Python), fetches the source, and applies native patches for the Termux environment.*
+
 ---
 
 ## ▶️ Running the Server
-
-Once installed, you can launch the entire stack (including Transmission, Jellyfin, and Bazarr) using the master start script:
-
-```bash
-./start-server.sh
-```
-
-**Battery Automation:** The server includes a background monitor (`battery-monitor.sh`) that manages power:
-*   **Full Mode:** (Battery > 50% or Charging) All services run normally.
-*   **Eco Mode:** (Battery ≤ 50% and Discharging) All services except Jellyfin are stopped to preserve battery.
-*   **Notifications:** You will receive a Termux notification whenever the server switches modes.
-
-To stop all services and the monitor:
-
-```bash
-./stop-server.sh
-```
-
-### 🛠️ Manual Service Control
-You can use `./service-control.sh` for granular control:
-*   `./service-control.sh status`: See which services are currently running.
-*   `./service-control.sh stop-eco`: Manually enter Eco Mode.
-*   `./service-control.sh start-all`: Force start everything.
-
-**Note on Stability:** The stack includes watchdogs for Radarr, Sonarr, and Prowlarr. If a service exits or crashes, it will automatically restart after a 10-second delay.
-
----
 
 ## 🆙 Updating the Server
 
