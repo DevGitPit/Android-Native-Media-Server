@@ -5,6 +5,9 @@ cd "$WORKDIR" || exit
 
 echo "🚀 Starting Media Server Stack with Battery Automation..."
 
+# Clear any stale manual overrides on a fresh start
+rm -f "$WORKDIR/.manual_mode"
+
 # Start the battery monitor. 
 # It is now configured to enforce the correct mode (Full or Eco) on startup.
 bash ./battery-monitor.sh --start
