@@ -32,49 +32,11 @@ pkg install radarr sonarr prowlarr -y
 ### Option 2: Automated Setup (Legacy Support)
 If you prefer a managed setup or need a specific version, use the provided script. It handles all dependencies, library linking, and runtime configurations:
 
-### 1. Update and Dependencies
 ```bash
-pkg update -y && pkg upgrade -y
-pkg install tur-repo -y
-pkg install wget curl sqlite libicu mono libesqlite3 ffmpeg jq termux-api dotnet-runtime-9.0 jellyfin-server -y
+bash ./setup_media_server.sh
 ```
 
-### 2. Setup the *Arr Stack
-```bash
-mkdir -p $PREFIX/opt
-
-# Download and Extract (Radarr, Sonarr, Prowlarr)
-# Note: Use the standard Linux ARM64 (core) downloads.
-# Example for Radarr:
-wget -O radarr.tar.gz "https://radarr.servarr.com/v1/update/master/updatefile?os=linux&runtime=netcore&arch=arm64"
-tar -xvzf radarr.tar.gz -C $PREFIX/opt/
-
-# Repeat for Sonarr and Prowlarr using their respective URLs.
-```
-
-### 3. Native Optimization (CRITICAL)
-For **each** application (Radarr, Sonarr, Prowlarr), you **MUST** perform the following:
-
-1.  **Remove bundled glibc libraries & binaries:**
-    ```bash
-    rm $PREFIX/opt/[AppName]/*.so
-    rm -f $PREFIX/opt/[AppName]/ffprobe
-    rm -f $PREFIX/opt/[AppName]/ffmpeg
-    ```
-2.  **Link native Android libraries & binaries:**
-    ```bash
-    ln -s $PREFIX/lib/libMonoPosixHelper.so $PREFIX/opt/[AppName]/
-    ln -s $PREFIX/lib/libe_sqlite3.so $PREFIX/opt/[AppName]/
-    ln -s $PREFIX/bin/ffprobe $PREFIX/opt/[AppName]/
-    ln -s $PREFIX/bin/ffmpeg $PREFIX/opt/[AppName]/
-    ```
-3.  **Patch the dependency manifest for .NET 9.0:**
-    ```bash
-    # This allows the app to find CoreCLR in the Termux environment
-    sed -i 's/"6\.0\.0"/"9.0.0"/g' $PREFIX/opt/[AppName]/[AppName].deps.json
-    ```
-4.  **Update the Runtime Config:**
-    Update `$PREFIX/opt/[AppName]/[AppName].runtimeconfig.json` to use `net9.0`.
+---
 
 ### 🛠️ Manual Service Control & Automation Modes
 The server uses a **Pilot/Auto-pilot** system to manage power and manual interventions:

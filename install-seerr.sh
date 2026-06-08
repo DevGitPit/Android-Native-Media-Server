@@ -12,10 +12,8 @@ echo "[*] Starting Seerr Termux Setup..."
 
 # 1. Install System Dependencies
 echo "[*] Checking system dependencies..."
-export DEBIAN_FRONTEND=noninteractive
-apt-get update
-apt-get -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade
-apt-get install -y nodejs git libvips termux-services
+pkg update
+pkg install -y nodejs git libvips termux-services
 if ! command -v pnpm &> /dev/null; then
     echo "[*] Installing pnpm..."
     npm install -g pnpm
@@ -97,8 +95,12 @@ mkdir -p "$SERVICE_DIR"
 cat <<EOT > "$SERVICE_DIR/run"
 #!/data/data/com.termux/files/usr/bin/bash
 exec 2>&1
-export \$(cat $REPO_DIR/.env | xargs)
-cd $REPO_DIR
+if [ -f "$REPO_DIR/.env" ]; then
+    set -a
+    . "$REPO_DIR/.env"
+    set +a
+fi
+cd "$REPO_DIR"
 exec node dist/index.js
 EOT
 chmod +x "$SERVICE_DIR/run"

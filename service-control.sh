@@ -113,7 +113,7 @@ start_arr_apps() {
 }
 
 start_bazarr() {
-    if ! pgrep -f "bazarr/.[m]ain.py" > /dev/null && ! pgrep -f "bazarr/.[p]y" > /dev/null; then
+    if ! pgrep -f "bazarr/[m]ain.py" > /dev/null && ! pgrep -f "[b]azarr.py" > /dev/null; then
         echo "$(date): Starting Bazarr..." >> "$LOG_DIR/bazarr.log"
         python "$BAZARR_PATH" >> "$LOG_DIR/bazarr.log" 2>&1 &
     fi
@@ -290,6 +290,7 @@ case "$1" in
         BATTERY_INFO=$(termux-battery-status 2>/dev/null)
         LEVEL=$(echo "$BATTERY_INFO" | jq -r '.percentage // 0')
         STATUS=$(echo "$BATTERY_INFO" | jq -r '.status // "DISCHARGING"')
+        if [[ ! "$LEVEL" =~ ^[0-9]+$ ]]; then LEVEL=0; fi
         THRESHOLD=50 # Should match battery-monitor.sh
         
         if [[ "$LEVEL" -gt "$THRESHOLD" || "$STATUS" == "CHARGING" || "$STATUS" == "FULL" ]]; then

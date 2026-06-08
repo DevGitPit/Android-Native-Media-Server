@@ -83,10 +83,11 @@ setup_app() {
     local url=$2
     
     # Check if native package is already installed
-    if pkg list-installed "${name,,}" &>/dev/null; then
+    if dpkg -s "${name,,}" &>/dev/null; then
         echo "✨ $name is already installed via pkg (Native). Skipping manual setup."
         return 0
     fi
+
 
     echo "📥 Setting up $name (Legacy Manual)..."
     if [ ! -d "$INSTALL_DIR/$name" ]; then
