@@ -343,7 +343,7 @@ case "$1" in
         ;;
     stop-sonarr|stop-radarr|stop-prowlarr|stop-bazarr|stop-transmission|stop-jellyfin)
         set_manual "$1" "$2"
-        app_name=$(echo "$1" | cut -d'-' -f2)
+        app_name="${1#*-}"
         "stop_$app_name"
         ;;
     *)
