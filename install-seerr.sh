@@ -55,28 +55,12 @@ if [ -f "$INDEX_JS" ]; then
     echo "  [+] Patched Next.js SWC loader for WASM fallback."
 fi
 
-# Patch next.config.ts or next.config.js
-CONFIG_FILE=""
-if [ -f "next.config.ts" ]; then
-    CONFIG_FILE="next.config.ts"
-elif [ -f "next.config.js" ]; then
-    CONFIG_FILE="next.config.js"
-fi
-
-if [ -n "$CONFIG_FILE" ]; then
-    if ! grep -q "swcMinify: false" "$CONFIG_FILE"; then
-        if grep -q "const nextConfig: NextConfig = {" "$CONFIG_FILE"; then
-            sed -i 's/const nextConfig: NextConfig = {/const nextConfig: NextConfig = {\n  swcMinify: false,/' "$CONFIG_FILE"
-        elif grep -q "module.exports = {" "$CONFIG_FILE"; then
-            sed -i 's/module.exports = {/module.exports = {\n  swcMinify: false,/' "$CONFIG_FILE"
-        fi
-        echo "  [+] Disabled swcMinify in $CONFIG_FILE."
-    fi
-fi
-
 # 6. Build Project
 echo "[*] Building Seerr..."
-pnpm build
+# Forcing Webpack because Turbopack is not yet supported with WASM on Android/arm64
+# We also use npx to ensure we're using the local next binary with the correct flags
+./node_modules/.bin/next build --webpack
+pnpm build:server
 
 # 7. Configure Environment
 echo "[*] Configuring environment..."
