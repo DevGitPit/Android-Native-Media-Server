@@ -83,7 +83,7 @@ setup_app() {
     local url=$2
     
     # Check if native package is already installed
-    if dpkg -s "${name,,}" &>/dev/null; then
+    if dpkg -s "${name,,}" 2>/dev/null | grep -q "Status: install ok installed"; then
         echo "✨ $name is already installed via pkg (Native). Skipping manual setup."
         return 0
     fi

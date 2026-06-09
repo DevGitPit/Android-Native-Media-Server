@@ -49,8 +49,8 @@ monitor_loop() {
                 else
                     bash "$CONTROL_SCRIPT" stop-eco --auto
                 fi
+                CURRENT_MODE="$TARGET_MODE"
             fi
-            CURRENT_MODE="$TARGET_MODE"
             HEARTBEAT_COUNT=0 # Reset on transition
         else
             # Heartbeat log (every 5 checks approx 10 minutes)

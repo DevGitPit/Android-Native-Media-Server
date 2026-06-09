@@ -26,9 +26,9 @@ start_transmission() {
 }
 
 # Helper to detect installation style
-is_native_arr() {
+is_native_app() {
     # Native pkg install registers a runit service
-    [ -d "$PREFIX/var/service/radarr" ]
+    [ -d "$PREFIX/var/service/$1" ]
 }
 
 start_radarr_legacy() {
@@ -80,7 +80,7 @@ start_prowlarr_legacy() {
 }
 
 start_radarr() {
-    if is_native_arr; then
+    if is_native_app radarr; then
         echo "$(date): Starting Radarr (Native)..." >> "$LOG_DIR/radarr.log"
         sv up radarr
     else
@@ -89,7 +89,7 @@ start_radarr() {
 }
 
 start_sonarr() {
-    if is_native_arr; then
+    if is_native_app sonarr; then
         echo "$(date): Starting Sonarr (Native)..." >> "$LOG_DIR/sonarr.log"
         sv up sonarr
     else
@@ -98,7 +98,7 @@ start_sonarr() {
 }
 
 start_prowlarr() {
-    if is_native_arr; then
+    if is_native_app prowlarr; then
         echo "$(date): Starting Prowlarr (Native)..." >> "$LOG_DIR/prowlarr.log"
         sv up prowlarr
     else
@@ -107,6 +107,7 @@ start_prowlarr() {
 }
 
 start_arr_apps() {
+    echo "$(date): [START] start_arr_apps called (Parent: $PPID)" >> "$LOG_DIR/monitor.log"
     start_radarr
     start_sonarr
     start_prowlarr
@@ -120,7 +121,7 @@ start_bazarr() {
 }
 
 stop_radarr() {
-    if is_native_arr; then
+    if is_native_app radarr; then
         echo "Stopping Radarr (Native)..."
         sv down radarr
     else
@@ -134,7 +135,7 @@ stop_radarr() {
 }
 
 stop_sonarr() {
-    if is_native_arr; then
+    if is_native_app sonarr; then
         echo "Stopping Sonarr (Native)..."
         sv down sonarr
     else
@@ -148,7 +149,7 @@ stop_sonarr() {
 }
 
 stop_prowlarr() {
-    if is_native_arr; then
+    if is_native_app prowlarr; then
         echo "Stopping Prowlarr (Native)..."
         sv down prowlarr
     else
@@ -163,15 +164,9 @@ stop_prowlarr() {
 
 stop_arr_apps() {
     echo "$(date): [STOP] stop_arr_apps called (Parent: $PPID)" >> "$LOG_DIR/monitor.log"
-    if is_native_arr; then
-        echo "Stopping Radarr, Sonarr, Prowlarr (Native)..."
-        sv down radarr sonarr prowlarr
-    else
-        echo "Stopping Radarr, Sonarr, Prowlarr (Legacy)..."
-        stop_radarr
-        stop_sonarr
-        stop_prowlarr
-    fi
+    stop_radarr
+    stop_sonarr
+    stop_prowlarr
 }
 
 stop_bazarr() {
@@ -207,16 +202,19 @@ is_transmission_active() {
 
 stop_jellyfin() {
     echo "Stopping Jellyfin..."
-    sv down jellyfin 2>/dev/null
-    # Try graceful SIGTERM first
-    pkill -f "/bin/jellyfin"
-    # Wait up to 15 seconds for process to exit
-    for i in {1..15}; do
-        pgrep -f "/bin/[j]ellyfin" > /dev/null || break
-        sleep 1
-    done
-    # Forceful SIGKILL if still alive
-    pkill -9 -f "/bin/jellyfin"
+    if is_native_app jellyfin; then
+        sv down jellyfin
+    else
+        # Try graceful SIGTERM first
+        pkill -f "jellyfin"
+        # Wait up to 15 seconds for process to exit
+        for i in {1..15}; do
+            pgrep -f "[j]ellyfin" > /dev/null || break
+            sleep 1
+        done
+        # Forceful SIGKILL if still alive
+        pkill -9 -f "jellyfin"
+    fi
 }
 
 check_status() {
@@ -322,7 +320,7 @@ case "$1" in
             echo "MODE: [AUTO] 🤖"
         fi
         # Use character classes [x] to prevent pgrep from matching its own command line
-        check_status "Jellyfin" "/bin/[j]ellyfin" "false"
+        check_status "Jellyfin" "[j]ellyfin" "false"
         check_status "Transmission" "[t]ransmission-daemon" "true"
         check_status "Radarr" "[R]adarr.dll" "false"
         check_status "Sonarr" "[S]onarr.dll" "false"
