@@ -77,7 +77,7 @@ echo "[*] Setting up termux-service..."
 SERVICE_DIR="$PREFIX/var/service/seerr"
 mkdir -p "$SERVICE_DIR"
 cat <<EOT > "$SERVICE_DIR/run"
-#!/data/data/com.termux/files/usr/bin/bash
+#!$PREFIX/bin/bash
 exec 2>&1
 if [ -f "$REPO_DIR/.env" ]; then
     set -a
