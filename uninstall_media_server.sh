@@ -9,8 +9,11 @@ pkill -f "Sonarr.dll"
 pkill -f "Prowlarr.dll"
 pkill -f "jellyfin"
 
-# 2. Remove Application Binaries
-echo "📂 Removing application binaries from $PREFIX/opt/..."
+# 2. Remove Application Packages
+echo "📂 Removing application packages..."
+pkg uninstall radarr sonarr prowlarr -y
+
+# Also remove old /opt versions if they exist
 rm -rf "$PREFIX/opt/Radarr"
 rm -rf "$PREFIX/opt/Sonarr"
 rm -rf "$PREFIX/opt/Prowlarr"

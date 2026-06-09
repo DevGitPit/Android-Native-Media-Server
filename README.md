@@ -22,93 +22,83 @@ The standard Linux ARM64 binaries for the *Arr stack are compiled for **glibc**.
 
 ## 🚀 Installation Steps
 
-### Option 1: Automated Setup (Recommended)
-The easiest way to get started is to use the provided automation script. It handles all dependencies, library linking, and runtime configurations for you:
+### Option 1: Native Packages (Best Performance)
+The most efficient way to run these apps is using native Termux packages. This eliminates the need for manual library linking and shimming.
 
 ```bash
-# 1. Download the script
-wget https://raw.githubusercontent.com/DevGitPit/Android-Native-Media-Server/main/setup_media_server.sh
+pkg install radarr sonarr prowlarr -y
+```
 
-# 2. Make it executable and run it
-chmod +x setup_media_server.sh && ./setup_media_server.sh
+### Option 2: Automated Setup (Legacy Support)
+If you prefer a managed setup or need a specific version, use the provided script. It handles all dependencies, library linking, and runtime configurations:
+
+```bash
+bash ./setup_media_server.sh
 ```
 
 ---
 
-### Option 2: Manual Installation (Step-by-Step)
+### 🛠️ Manual Service Control & Automation Modes
+The server uses a **Pilot/Auto-pilot** system to manage power and manual interventions:
 
-### 1. Update and Dependencies
+*   **Auto-pilot Mode 🤖**: The default mode. The `battery-monitor.sh` background script manages services based on battery level (Full vs. Eco).
+*   **Pilot (Manual) Mode 🕹️**: Triggered automatically whenever you run a manual service command. The battery monitor will **stop** overriding your choices until you return to Auto-pilot.
+
+#### **Available Commands**
+Use `./service-control.sh <command>` to manage the stack:
+
+| Command | Description |
+| :--- | :--- |
+| **`status`** | Shows current services and whether you are in `AUTO` or `MANUAL` mode. |
+| **`auto`** | **Resume Auto-pilot**. Clears manual overrides and enforces battery rules immediately. |
+| **`start-all`** | Starts every service and enters Manual Mode. |
+| **`stop-all`** | Stops every service and enters Manual Mode. |
+| **`stop-eco`** | Stops everything except Jellyfin (and active Transmission) and enters Manual Mode. |
+| **`start-<app>`** | Start a specific app (e.g., `start-sonarr`). Enters Manual Mode. |
+| **`stop-<app>`** | Stop a specific app (e.g., `stop-radarr`). Enters Manual Mode. |
+| **`re-shim`** | Re-applies native library patches after an app update. |
+
+> [!TIP]
+> **Example:** If you want to keep Sonarr running while charging even if the battery is low, just run `./service-control.sh start-sonarr`. The monitor will "stand down" and let you work. When finished, run `./service-control.sh auto` to let the battery logic take back over.
+
+---
+
+## 🌟 Extra Features
+
+### Overserr / Jellyseerr Support
+This repository includes a native installer for **Seerr** (a request management tool for your media stack). 
 ```bash
-pkg update -y && pkg upgrade -y
-pkg install tur-repo -y
-pkg install wget curl sqlite libicu mono libesqlite3 ffmpeg jq termux-api dotnet-runtime-9.0 jellyfin-server -y
+./install-seerr.sh
 ```
-
-### 2. Setup the *Arr Stack
-```bash
-mkdir -p $PREFIX/opt
-
-# Download and Extract (Radarr, Sonarr, Prowlarr)
-# Note: Use the standard Linux ARM64 (core) downloads.
-# Example for Radarr:
-wget -O radarr.tar.gz "https://radarr.servarr.com/v1/update/master/updatefile?os=linux&runtime=netcore&arch=arm64"
-tar -xvzf radarr.tar.gz -C $PREFIX/opt/
-
-# Repeat for Sonarr and Prowlarr using their respective URLs.
-```
-
-### 3. Native Optimization (CRITICAL)
-For **each** application (Radarr, Sonarr, Prowlarr), you **MUST** perform the following:
-
-1.  **Remove bundled glibc libraries & binaries:**
-    ```bash
-    rm $PREFIX/opt/[AppName]/*.so
-    rm -f $PREFIX/opt/[AppName]/ffprobe
-    rm -f $PREFIX/opt/[AppName]/ffmpeg
-    ```
-2.  **Link native Android libraries & binaries:**
-    ```bash
-    ln -s $PREFIX/lib/libMonoPosixHelper.so $PREFIX/opt/[AppName]/
-    ln -s $PREFIX/lib/libe_sqlite3.so $PREFIX/opt/[AppName]/
-    ln -s $PREFIX/bin/ffprobe $PREFIX/opt/[AppName]/
-    ln -s $PREFIX/bin/ffmpeg $PREFIX/opt/[AppName]/
-    ```
-3.  **Patch the dependency manifest for .NET 9.0:**
-    ```bash
-    # This allows the app to find CoreCLR in the Termux environment
-    sed -i 's/"6\.0\.0"/"9.0.0"/g' $PREFIX/opt/[AppName]/[AppName].deps.json
-    ```
-4.  **Update the Runtime Config:**
-    Update `$PREFIX/opt/[AppName]/[AppName].runtimeconfig.json` to use `net9.0`.
+*It handles dependencies (Node.js, Python), fetches the source, and applies native patches for the Termux environment.*
 
 ---
 
 ## ▶️ Running the Server
 
-Once installed, you can launch the entire stack (including Transmission, Jellyfin, and Bazarr) using the master start script:
+The server stack is designed to be self-managing based on your battery level, but you can always take manual control.
 
+### 🚀 Starting the Stack
+To start the entire media server stack and activate battery automation:
 ```bash
 ./start-server.sh
 ```
+*This starts the battery monitor in the background. It will automatically decide whether to run all services (Full Power) or just Jellyfin (Eco Mode) based on your battery percentage.*
 
-**Battery Automation:** The server includes a background monitor (`battery-monitor.sh`) that manages power:
-*   **Full Mode:** (Battery > 50% or Charging) All services run normally.
-*   **Eco Mode:** (Battery ≤ 50% and Discharging) All services except Jellyfin are stopped to preserve battery.
-*   **Notifications:** You will receive a Termux notification whenever the server switches modes.
-
-To stop all services and the monitor:
-
+### 🛑 Stopping the Stack
+To gracefully shut down all services and stop the battery monitor:
 ```bash
 ./stop-server.sh
 ```
 
-### 🛠️ Manual Service Control
-You can use `./service-control.sh` for granular control:
-*   `./service-control.sh status`: See which services are currently running.
-*   `./service-control.sh stop-eco`: Manually enter Eco Mode.
-*   `./service-control.sh start-all`: Force start everything.
+### 🕹️ Manual Control & Status
+Use the `service-control.sh` script to check status or override automation:
 
-**Note on Stability:** The stack includes watchdogs for Radarr, Sonarr, and Prowlarr. If a service exits or crashes, it will automatically restart after a 10-second delay.
+-   **Check Status:** `./service-control.sh status`
+-   **Manual Overrides:**
+    -   `./service-control.sh start-all`: Force all services to start (overrides battery logic).
+    -   `./service-control.sh stop-all`: Stop all services immediately.
+-   **Return to Automation:** `./service-control.sh auto` (Deletes manual overrides and lets battery logic take over).
 
 ---
 

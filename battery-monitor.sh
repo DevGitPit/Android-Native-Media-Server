@@ -38,20 +38,30 @@ monitor_loop() {
         
         # Transition logic
         if [[ "$TARGET_MODE" != "$CURRENT_MODE" ]]; then
-            echo "$(date): Battery at $LEVEL%, Status: $STATUS. Mode: $TARGET_MODE" >> "$WORKDIR/logs/monitor.log"
-            
-            if [[ "$TARGET_MODE" == "full" ]]; then
-                bash "$CONTROL_SCRIPT" start-all
+            # CHECK FOR MANUAL OVERRIDE
+            if [[ -f "$WORKDIR/.manual_mode" ]]; then
+                if [[ "$TARGET_MODE" != "$LAST_SKIPPED_MODE" ]]; then
+                    echo "$(date): Battery at $LEVEL%, Status: $STATUS. [SKIP] Manual override active. Not applying $TARGET_MODE mode." >> "$WORKDIR/logs/monitor.log"
+                    LAST_SKIPPED_MODE="$TARGET_MODE"
+                fi
             else
-                bash "$CONTROL_SCRIPT" stop-eco
+                echo "$(date): Battery at $LEVEL%, Status: $STATUS. Mode: $TARGET_MODE" >> "$WORKDIR/logs/monitor.log"
+                if [[ "$TARGET_MODE" == "full" ]]; then
+                    bash "$CONTROL_SCRIPT" start-all --auto
+                else
+                    bash "$CONTROL_SCRIPT" stop-eco --auto
+                fi
+                CURRENT_MODE="$TARGET_MODE"
+                LAST_SKIPPED_MODE="none"
             fi
-            CURRENT_MODE="$TARGET_MODE"
             HEARTBEAT_COUNT=0 # Reset on transition
         else
             # Heartbeat log (every 5 checks approx 10 minutes)
             ((HEARTBEAT_COUNT++))
             if (( HEARTBEAT_COUNT >= 5 )); then
-                 echo "$(date): Heartbeat - Level: $LEVEL%, Status: $STATUS, Mode: $CURRENT_MODE" >> "$WORKDIR/logs/monitor.log"
+                 MODE_LABEL="$CURRENT_MODE"
+                 [[ -f "$WORKDIR/.manual_mode" ]] && MODE_LABEL="$CURRENT_MODE (MANUAL 🕹️)"
+                 echo "$(date): Heartbeat - Level: $LEVEL%, Status: $STATUS, Mode: $MODE_LABEL" >> "$WORKDIR/logs/monitor.log"
                  HEARTBEAT_COUNT=0
             fi
         fi
