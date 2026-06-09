@@ -338,7 +338,7 @@ case "$1" in
         ;;
     start-sonarr|start-radarr|start-prowlarr|start-bazarr|start-transmission|start-jellyfin)
         set_manual "$1" "$2"
-        app_name=$(echo "$1" | cut -d'-' -f2)
+        app_name="${1#*-}"
         "start_$app_name"
         ;;
     stop-sonarr|stop-radarr|stop-prowlarr|stop-bazarr|stop-transmission|stop-jellyfin)
