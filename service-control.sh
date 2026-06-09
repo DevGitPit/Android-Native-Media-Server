@@ -16,8 +16,12 @@ notify() {
 }
 
 start_jellyfin() {
-    echo "$(date): Starting Jellyfin (via sv)..." >> "$LOG_DIR/jellyfin.log"
-    sv up jellyfin 2>/dev/null || jellyfin > "$LOG_DIR/jellyfin_run.log" 2>&1 &
+    echo "$(date): Starting Jellyfin..." >> "$LOG_DIR/jellyfin.log"
+    if is_native_app jellyfin; then
+        sv up jellyfin
+    else
+        jellyfin > "$LOG_DIR/jellyfin_run.log" 2>&1 &
+    fi
 }
 
 start_transmission() {
