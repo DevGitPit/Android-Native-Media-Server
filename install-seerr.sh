@@ -5,7 +5,7 @@
 
 set -e
 
-REPO_DIR="/data/data/com.termux/files/usr/opt/seerr"
+REPO_DIR="$PREFIX/opt/seerr"
 CONFIG_DIR="$HOME/.config/seerr"
 
 echo "[*] Starting Seerr Termux Setup..."
