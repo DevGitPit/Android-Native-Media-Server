@@ -210,14 +210,14 @@ stop_jellyfin() {
         sv down jellyfin
     else
         # Try graceful SIGTERM first
-        pkill -f "jellyfin"
+        pkill -x "jellyfin"
         # Wait up to 15 seconds for process to exit
         for i in {1..15}; do
-            pgrep -f "[j]ellyfin" > /dev/null || break
+            pgrep -x "jellyfin" > /dev/null || break
             sleep 1
         done
         # Forceful SIGKILL if still alive
-        pkill -9 -f "jellyfin"
+        pkill -9 -x "jellyfin"
     fi
 }
 
