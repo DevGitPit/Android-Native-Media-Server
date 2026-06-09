@@ -38,18 +38,21 @@ monitor_loop() {
         
         # Transition logic
         if [[ "$TARGET_MODE" != "$CURRENT_MODE" ]]; then
-            echo "$(date): Battery at $LEVEL%, Status: $STATUS. Mode: $TARGET_MODE" >> "$WORKDIR/logs/monitor.log"
-            
             # CHECK FOR MANUAL OVERRIDE
             if [[ -f "$WORKDIR/.manual_mode" ]]; then
-                echo "$(date): [SKIP] Manual override active. Not applying $TARGET_MODE mode." >> "$WORKDIR/logs/monitor.log"
+                if [[ "$TARGET_MODE" != "$LAST_SKIPPED_MODE" ]]; then
+                    echo "$(date): Battery at $LEVEL%, Status: $STATUS. [SKIP] Manual override active. Not applying $TARGET_MODE mode." >> "$WORKDIR/logs/monitor.log"
+                    LAST_SKIPPED_MODE="$TARGET_MODE"
+                fi
             else
+                echo "$(date): Battery at $LEVEL%, Status: $STATUS. Mode: $TARGET_MODE" >> "$WORKDIR/logs/monitor.log"
                 if [[ "$TARGET_MODE" == "full" ]]; then
                     bash "$CONTROL_SCRIPT" start-all --auto
                 else
                     bash "$CONTROL_SCRIPT" stop-eco --auto
                 fi
                 CURRENT_MODE="$TARGET_MODE"
+                LAST_SKIPPED_MODE="none"
             fi
             HEARTBEAT_COUNT=0 # Reset on transition
         else

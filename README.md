@@ -76,6 +76,32 @@ This repository includes a native installer for **Seerr** (a request management 
 
 ## ▶️ Running the Server
 
+The server stack is designed to be self-managing based on your battery level, but you can always take manual control.
+
+### 🚀 Starting the Stack
+To start the entire media server stack and activate battery automation:
+```bash
+./start-server.sh
+```
+*This starts the battery monitor in the background. It will automatically decide whether to run all services (Full Power) or just Jellyfin (Eco Mode) based on your battery percentage.*
+
+### 🛑 Stopping the Stack
+To gracefully shut down all services and stop the battery monitor:
+```bash
+./stop-server.sh
+```
+
+### 🕹️ Manual Control & Status
+Use the `service-control.sh` script to check status or override automation:
+
+-   **Check Status:** `./service-control.sh status`
+-   **Manual Overrides:**
+    -   `./service-control.sh start-all`: Force all services to start (overrides battery logic).
+    -   `./service-control.sh stop-all`: Stop all services immediately.
+-   **Return to Automation:** `./service-control.sh auto` (Deletes manual overrides and lets battery logic take over).
+
+---
+
 ## 🆙 Updating the Server
 
 ### 1. Radarr, Sonarr, and Prowlarr
